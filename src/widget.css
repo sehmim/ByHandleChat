@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:host,
+:host * {
+  box-sizing: border-box;
+}
+
+:host {
+  font-family: 'Inter', 'SF Pro Display', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont,
+    sans-serif;
+  color: #0f172a;
+  letter-spacing: -0.01em;
+  --byh-primary: #4f46e5;
+}
+
+:host button,
+:host input,
+:host textarea {
+  font-family: inherit;
+}
