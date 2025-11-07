@@ -1,10 +1,10 @@
 type ChatLauncherProps = {
   isOpen: boolean
-  brandName: string
+  brandName?: string
   onToggle: () => void
 }
 
-export const ChatLauncher = ({ isOpen, brandName, onToggle }: ChatLauncherProps) => (
+export const ChatLauncher = ({ isOpen, onToggle }: ChatLauncherProps) => (
   <button
     type="button"
     onClick={onToggle}

@@ -5,16 +5,16 @@ import react from '@vitejs/plugin-react'
 export default defineConfig({
   plugins: [react()],
   build: {
-    lib: {
-      entry: resolve(__dirname, 'src/widget.tsx'),
-      name: 'ByHandleChatWidget',
-      formats: ['iife'],
-      fileName: () => 'widget.js',
-    },
     sourcemap: true,
     rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'index.html'),
+        widget: resolve(__dirname, 'src/widget.tsx'),
+      },
       output: {
-        extend: true,
+        entryFileNames: (chunkInfo) => {
+          return chunkInfo.name === 'widget' ? 'widget.js' : 'assets/[name]-[hash].js'
+        },
       },
     },
   },

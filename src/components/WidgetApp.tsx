@@ -2,8 +2,6 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { MessageProvider } from '../state/MessageProvider'
 import type { AnalyticsEvent, ClientConfig } from '../types'
 import { ChatLauncher } from './widget/ChatLauncher'
-import { ChatTranscript } from './widget/ChatTranscript'
-import { Composer } from './widget/Composer'
 import { SuggestionCards } from './widget/SuggestionCards'
 import { BookingAvailability } from './widget/booking/BookingAvailability'
 import { BookingDetails } from './widget/booking/BookingDetails'
@@ -154,7 +152,6 @@ export const WidgetApp = ({ clientId, configEndpoint, emitEvent }: WidgetAppProp
   const handleBackToAvailability = useCallback(() => {
     setBookingState((prev) => {
       if (prev.status === 'submitting' || prev.status === 'success') {
-        const date = prev.selection.date
         bookingSubmissionRef.current += 1
         loadBookingAvailability()
         return { status: 'loading' }
