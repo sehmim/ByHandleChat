@@ -119,7 +119,11 @@ const findHostScript = (scriptElement?: HTMLScriptElement | null) => {
   if (scriptElement) return scriptElement
   const current = document.currentScript as HTMLScriptElement | null
   if (current) return current
-  return document.querySelector<HTMLScriptElement>('script[data-user-id][src*="widget"]')
+  // Try to find by ID first, then fall back to data attributes
+  return (
+    document.querySelector<HTMLScriptElement>('script#handle-chat') ||
+    document.querySelector<HTMLScriptElement>('script[data-user-id][src*="widget"]')
+  )
 }
 
 const autoBootstrap = () => {
@@ -160,7 +164,6 @@ declare global {
 if (typeof window !== 'undefined') {
   window.HandleChat = window.HandleChat ?? { init: initByHandleChat }
 
-  if (!import.meta.env.DEV) {
-    autoBootstrap()
-  }
+  // Always auto-bootstrap if script tag is found
+  autoBootstrap()
 }
