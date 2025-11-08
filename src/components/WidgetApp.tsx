@@ -12,10 +12,10 @@ import { WidgetHeader } from './widget/WidgetHeader'
 import type { BookingForm, BookingSelection, BookingState } from './widget/types'
 
 type WidgetAppProps = {
-  clientId: string
-  userId?: string
-  calendarSettingId?: string
-  chatbotId?: string
+  userId: string
+  calendarSettingId: string
+  chatbotId: string
+  clientId?: string
   brandName?: string
   primaryColor?: string
   welcomeMessage?: string
@@ -27,10 +27,10 @@ const DEFAULT_PRIMARY = '#4f46e5'
 const FALLBACK_WELCOME = 'Thanks for stopping by! Leave a note and we will reply shortly.'
 
 export const WidgetApp = ({
-  clientId,
   userId,
   calendarSettingId,
   chatbotId,
+  clientId,
   brandName = 'Handle',
   primaryColor = DEFAULT_PRIMARY,
   welcomeMessage = FALLBACK_WELCOME,
@@ -44,7 +44,7 @@ export const WidgetApp = ({
   const bookingSubmissionRef = useRef(0)
 
   const config: ClientConfig = {
-    clientId,
+    clientId: clientId || userId, // Use userId as fallback for clientId
     welcomeMessage,
     primaryColor,
     brandName,
@@ -138,11 +138,11 @@ export const WidgetApp = ({
       setIsOpen((prev) => {
         const next = resolver(prev)
         if (next === prev) return prev
-        emitEvent?.({ type: next ? 'chat_opened' : 'chat_closed', clientId })
+        emitEvent?.({ type: next ? 'chat_opened' : 'chat_closed', clientId: clientId || userId })
         return next
       })
     },
-    [clientId, emitEvent],
+    [clientId, userId, emitEvent],
   )
 
   const togglePanel = useCallback(() => {
@@ -177,7 +177,7 @@ export const WidgetApp = ({
           onClose={closePanel}
         />
 
-        <MessageProvider clientId={clientId} welcomeMessage={welcomeMessage} emitEvent={emitEvent}>
+        <MessageProvider clientId={clientId || userId} welcomeMessage={welcomeMessage} emitEvent={emitEvent}>
           <div className="flex flex-col gap-2 bg-slate-50/40 px-4 py-3">
               {!bookingActive && (
                 <SuggestionCards bookingActive={bookingActive} onStartBooking={startBookingFlow} />

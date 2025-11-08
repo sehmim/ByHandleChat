@@ -5,10 +5,10 @@ import widgetStyles from './widget.css?inline'
 import type { AnalyticsEvent } from './types'
 
 type InitOptions = {
-  clientId: string
-  userId?: string
-  calendarSettingId?: string
-  chatbotId?: string
+  userId: string
+  calendarSettingId: string
+  chatbotId: string
+  clientId?: string
   brandName?: string
   primaryColor?: string
   welcomeMessage?: string
@@ -16,7 +16,7 @@ type InitOptions = {
 }
 
 type WidgetInstance = {
-  clientId: string
+  userId: string
   destroy: () => void
 }
 
@@ -26,9 +26,9 @@ const emitEvent = (event: AnalyticsEvent) => {
   window.dispatchEvent(new CustomEvent('byhandle-chat-event', { detail: event }))
 }
 
-const createMountHost = (clientId: string) => {
+const createMountHost = (userId: string) => {
   const host = document.createElement('div')
-  host.dataset.byhandleClient = clientId
+  host.dataset.byhandleUser = userId
   host.style.all = 'initial'
   host.style.position = 'fixed'
   host.style.bottom = '0'
@@ -69,31 +69,41 @@ const ensureDomReady = (callback: () => void) => {
 }
 
 export const initByHandleChat = (options: InitOptions) => {
-  const { clientId } = options
+  const { userId, calendarSettingId, chatbotId } = options
 
-  if (!clientId) {
-    console.warn('[ByHandleChat] Missing clientId. Skipping initialization.')
+  if (!userId) {
+    console.warn('[HandleChat] Missing userId. Skipping initialization.')
     return null
   }
 
-  if (instances.has(clientId)) {
-    return instances.get(clientId)!
+  if (!calendarSettingId) {
+    console.warn('[HandleChat] Missing calendarSettingId. Skipping initialization.')
+    return null
+  }
+
+  if (!chatbotId) {
+    console.warn('[HandleChat] Missing chatbotId. Skipping initialization.')
+    return null
+  }
+
+  if (instances.has(userId)) {
+    return instances.get(userId)!
   }
 
   const mount = () => {
-    const host = createMountHost(clientId)
+    const host = createMountHost(userId)
     const { root } = renderApp(host, options)
 
     const instance: WidgetInstance = {
-      clientId,
+      userId,
       destroy: () => {
         root.unmount()
         host.remove()
-        instances.delete(clientId)
+        instances.delete(userId)
       },
     }
 
-    instances.set(clientId, instance)
+    instances.set(userId, instance)
     return instance
   }
 
@@ -109,25 +119,28 @@ const findHostScript = (scriptElement?: HTMLScriptElement | null) => {
   if (scriptElement) return scriptElement
   const current = document.currentScript as HTMLScriptElement | null
   if (current) return current
-  return document.querySelector<HTMLScriptElement>('script[data-client-id][src*="widget"]')
+  return document.querySelector<HTMLScriptElement>('script[data-user-id][src*="widget"]')
 }
 
 const autoBootstrap = () => {
   const script = findHostScript()
   if (!script) return
-  const clientId = script.dataset.clientId
 
-  if (!clientId) {
-    console.warn('[ByHandleChat] data-client-id is required on the embed script.')
+  const userId = script.dataset.userId
+  const calendarSettingId = script.dataset.calendarSettingId
+  const chatbotId = script.dataset.chatbotId
+
+  if (!userId || !calendarSettingId || !chatbotId) {
+    console.warn('[HandleChat] data-user-id, data-calendar-setting-id, and data-chatbot-id are required on the embed script.')
     return
   }
 
   ensureDomReady(() => {
     initByHandleChat({
-      clientId,
-      userId: script.dataset.userId,
-      calendarSettingId: script.dataset.calendarSettingId,
-      chatbotId: script.dataset.chatbotId,
+      userId,
+      calendarSettingId,
+      chatbotId,
+      clientId: script.dataset.clientId,
       brandName: script.dataset.brandName,
       primaryColor: script.dataset.primaryColor,
       welcomeMessage: script.dataset.welcomeMessage,
@@ -138,14 +151,14 @@ const autoBootstrap = () => {
 
 declare global {
   interface Window {
-    ByHandleChat?: {
+    HandleChat?: {
       init: (options: InitOptions) => WidgetInstance | null
     }
   }
 }
 
 if (typeof window !== 'undefined') {
-  window.ByHandleChat = window.ByHandleChat ?? { init: initByHandleChat }
+  window.HandleChat = window.HandleChat ?? { init: initByHandleChat }
 
   if (!import.meta.env.DEV) {
     autoBootstrap()
