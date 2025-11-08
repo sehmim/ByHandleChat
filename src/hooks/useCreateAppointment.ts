@@ -45,7 +45,7 @@ export function useCreateAppointment() {
     setData(null)
 
     try {
-      const response = await fetch('https://byhandle.gadget.app/api/appointments/create', {
+      const response = await fetch('https://handle.gadget.app/api/appointments/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
