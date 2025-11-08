@@ -4,6 +4,9 @@ export type ClientConfig = {
   primaryColor?: string
   brandName?: string
   logoUrl?: string
+  userId?: string
+  calendarSettingId?: string
+  chatbotId?: string
 }
 
 export type Message = {

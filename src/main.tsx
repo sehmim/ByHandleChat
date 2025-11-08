@@ -5,7 +5,15 @@ import { initByHandleChat } from './widget'
 
 const DevApp = () => {
   useEffect(() => {
-    initByHandleChat({ clientId: 'demo', configEndpoint: '/mock-config.json' })
+    initByHandleChat({
+      clientId: 'demo',
+      brandName: 'Handle',
+      primaryColor: '#2563eb',
+      welcomeMessage: "Hey there! I'm the Handle assistant. Book an appointment!",
+      userId: '14',
+      calendarSettingId: '6',
+      chatbotId: '19',
+    })
   }, [])
 
   return (

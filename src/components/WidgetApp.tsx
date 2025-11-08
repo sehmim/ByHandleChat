@@ -13,77 +13,50 @@ import type { BookingForm, BookingSelection, BookingState } from './widget/types
 
 type WidgetAppProps = {
   clientId: string
-  configEndpoint?: string
+  userId?: string
+  calendarSettingId?: string
+  chatbotId?: string
+  brandName?: string
+  primaryColor?: string
+  welcomeMessage?: string
+  logoUrl?: string
   emitEvent?: (event: AnalyticsEvent) => void
 }
 
 const DEFAULT_PRIMARY = '#4f46e5'
 const FALLBACK_WELCOME = 'Thanks for stopping by! Leave a note and we will reply shortly.'
 
-const defaultConfigFor = (clientId: string): ClientConfig => ({
+export const WidgetApp = ({
   clientId,
-  welcomeMessage: FALLBACK_WELCOME,
-  primaryColor: DEFAULT_PRIMARY,
-  brandName: 'Handle',
-})
-
-type FetchState = 'idle' | 'loading' | 'ready' | 'error'
-
-export const WidgetApp = ({ clientId, configEndpoint, emitEvent }: WidgetAppProps) => {
-  const [config, setConfig] = useState<ClientConfig | null>(null)
-  const [status, setStatus] = useState<FetchState>('idle')
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  userId,
+  calendarSettingId,
+  chatbotId,
+  brandName = 'Handle',
+  primaryColor = DEFAULT_PRIMARY,
+  welcomeMessage = FALLBACK_WELCOME,
+  logoUrl,
+  emitEvent,
+}: WidgetAppProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [logoFailed, setLogoFailed] = useState(false)
   const [bookingState, setBookingState] = useState<BookingState>({ status: 'idle' })
   const bookingRequestRef = useRef(0)
   const bookingSubmissionRef = useRef(0)
 
-  useEffect(() => {
-    let isCancelled = false
-
-    const loadConfig = async () => {
-      setStatus('loading')
-      const endpoint =
-        configEndpoint ?? `https://api.byhandle.ai/client-config/${encodeURIComponent(clientId)}`
-
-      try {
-        const response = await fetch(endpoint, { credentials: 'omit' })
-        if (!response.ok) {
-          throw new Error(`Received ${response.status}`)
-        }
-
-        const remoteConfig = (await response.json()) as ClientConfig
-        if (isCancelled) return
-
-        setConfig({
-          clientId,
-          welcomeMessage: remoteConfig.welcomeMessage ?? FALLBACK_WELCOME,
-          primaryColor: remoteConfig.primaryColor ?? DEFAULT_PRIMARY,
-          brandName: remoteConfig.brandName ?? 'Handle',
-          logoUrl: remoteConfig.logoUrl,
-        })
-        setStatus('ready')
-        setErrorMessage(null)
-      } catch (error) {
-        console.warn('[ByHandleChat] Falling back to default configuration.', error)
-        if (isCancelled) return
-        setConfig(defaultConfigFor(clientId))
-        setErrorMessage('Using default styling. Client settings could not be loaded.')
-        setStatus('error')
-      }
-    }
-
-    loadConfig()
-
-    return () => {
-      isCancelled = true
-    }
-  }, [clientId, configEndpoint])
+  const config: ClientConfig = {
+    clientId,
+    welcomeMessage,
+    primaryColor,
+    brandName,
+    logoUrl,
+    userId,
+    calendarSettingId,
+    chatbotId,
+  }
 
   useEffect(() => {
     setLogoFailed(false)
-  }, [config?.logoUrl])
+  }, [logoUrl])
 
   const loadBookingAvailability = useCallback(() => {
     bookingRequestRef.current += 1
@@ -182,10 +155,6 @@ export const WidgetApp = ({ clientId, configEndpoint, emitEvent }: WidgetAppProp
 
   const bookingActive = bookingState.status !== 'idle'
   const showAvailability = ['loading', 'error', 'ready'].includes(bookingState.status)
-  const brandName = config?.brandName ?? 'Handle'
-  const primaryColor = config?.primaryColor ?? DEFAULT_PRIMARY
-  const isLoaded = status === 'ready' || status === 'error'
-  const welcomeMessage = config?.welcomeMessage ?? FALLBACK_WELCOME
   const accentStyle = { '--byh-primary': primaryColor } as CSSProperties
   const panelClasses = [
     'w-full origin-bottom-right rounded-xl border border-slate-200/60 bg-white shadow-lg transition',
@@ -202,20 +171,14 @@ export const WidgetApp = ({ clientId, configEndpoint, emitEvent }: WidgetAppProp
       <section aria-hidden={!isOpen} className={panelClasses}>
         <WidgetHeader
           brandName={brandName}
-          logoUrl={config?.logoUrl}
+          logoUrl={logoUrl}
           logoFailed={logoFailed}
           onLogoError={() => setLogoFailed(true)}
           onClose={closePanel}
         />
 
-        {isLoaded ? (
-          <MessageProvider clientId={clientId} welcomeMessage={welcomeMessage} emitEvent={emitEvent}>
-            <div className="flex flex-col gap-2 bg-slate-50/40 px-4 py-3">
-              {errorMessage && (
-                <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">
-                  {errorMessage}
-                </div>
-              )}
+        <MessageProvider clientId={clientId} welcomeMessage={welcomeMessage} emitEvent={emitEvent}>
+          <div className="flex flex-col gap-2 bg-slate-50/40 px-4 py-3">
               {!bookingActive && (
                 <SuggestionCards bookingActive={bookingActive} onStartBooking={startBookingFlow} />
               )}
@@ -231,6 +194,7 @@ export const WidgetApp = ({ clientId, configEndpoint, emitEvent }: WidgetAppProp
               {bookingState.status === 'details' && (
                 <BookingDetails
                   state={bookingState}
+                  config={config}
                   onBack={handleBookingBackToSlots}
                   onClose={closeBooking}
                   onSubmit={handleBookingFormSubmit}
@@ -255,19 +219,6 @@ export const WidgetApp = ({ clientId, configEndpoint, emitEvent }: WidgetAppProp
               </div>
             )} */}
           </MessageProvider>
-        ) : (
-          <>
-            <div className="bg-slate-50/40 px-4 py-3">
-              <div className="space-y-0.5 rounded-lg bg-white px-3 py-2.5 text-sm text-slate-600">
-                <strong className="block font-medium text-slate-900">Loading assistant…</strong>
-                <span className="text-xs">Fetching your personalized settings.</span>
-              </div>
-            </div>
-            <div className="border-t border-slate-200/60 bg-white px-4 py-3 text-center text-xs text-slate-500">
-              Preparing chat experience…
-            </div>
-          </>
-        )}
       </section>
 
       <ChatLauncher isOpen={isOpen} brandName={brandName} onToggle={togglePanel} />

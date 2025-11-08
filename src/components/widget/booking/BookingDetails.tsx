@@ -1,9 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { BookingForm, BookingState } from '../types'
 import { formatDateLong } from './helpers'
+import { useCreateAppointment } from '../../../hooks/useCreateAppointment'
+import type { ClientConfig } from '../../../types'
 
 type BookingDetailsProps = {
   state: Extract<BookingState, { status: 'details' }>
+  config: ClientConfig
   onBack: () => void
   onClose: () => void
   onSubmit: (form: BookingForm) => void
@@ -11,8 +14,9 @@ type BookingDetailsProps = {
 
 const initialForm: BookingForm = { fullName: '', email: '', notes: '' }
 
-export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDetailsProps) => {
+export const BookingDetails = ({ state, config, onBack, onClose, onSubmit }: BookingDetailsProps) => {
   const [form, setForm] = useState(initialForm)
+  const { createAppointment, loading: submitting } = useCreateAppointment()
 
   useEffect(() => {
     setForm(initialForm)
@@ -21,14 +25,55 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
   const isValid =
     form.fullName.trim().length > 1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim().toLowerCase())
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!isValid) return
-    onSubmit({
+    if (!isValid || submitting) return
+
+    const bookingForm: BookingForm = {
       fullName: form.fullName.trim(),
       email: form.email.trim(),
       notes: form.notes.trim(),
-    })
+    }
+
+    // Parse the time slot (e.g., "2:00 PM")
+    const [time, period] = state.selection.slot.split(' ')
+    const [hours, minutes] = time.split(':').map(Number)
+    let hour24 = hours
+    if (period === 'PM' && hours !== 12) hour24 += 12
+    if (period === 'AM' && hours === 12) hour24 = 0
+
+    // Create start and end times
+    const startDate = new Date(state.selection.date)
+    startDate.setHours(hour24, minutes || 0, 0, 0)
+
+    const endDate = new Date(startDate)
+    endDate.setMinutes(endDate.getMinutes() + 30) // Default 30 min duration
+
+    // Only call API if we have required config
+    if (config.userId && config.calendarSettingId) {
+      const result = await createAppointment({
+        userId: config.userId,
+        calendarSettingId: config.calendarSettingId,
+        startDateTime: startDate.toISOString(),
+        endDateTime: endDate.toISOString(),
+        guestName: bookingForm.fullName,
+        guestEmail: bookingForm.email || undefined,
+        notes: bookingForm.notes || undefined,
+        chatbotId: config.chatbotId,
+      })
+
+      if (result.success) {
+        // API call succeeded, proceed with the form submission
+        onSubmit(bookingForm)
+      } else {
+        // Handle error - could show an alert or error message
+        console.error('Failed to create appointment:', result.error)
+        alert(result.error?.error || 'Failed to create appointment. Please try again.')
+      }
+    } else {
+      // No API config, just proceed with mock flow
+      onSubmit(bookingForm)
+    }
   }
 
   const formattedDate = formatDateLong(state.selection.date)
@@ -109,10 +154,10 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
         </label>
         <button
           type="submit"
-          disabled={!isValid}
+          disabled={!isValid || submitting}
           className="flex items-center justify-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-60"
         >
-          Continue
+          {submitting ? 'Creating appointment...' : 'Continue'}
         </button>
       </form>
     </section>

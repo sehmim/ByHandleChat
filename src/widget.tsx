@@ -6,7 +6,13 @@ import type { AnalyticsEvent } from './types'
 
 type InitOptions = {
   clientId: string
-  configEndpoint?: string
+  userId?: string
+  calendarSettingId?: string
+  chatbotId?: string
+  brandName?: string
+  primaryColor?: string
+  welcomeMessage?: string
+  logoUrl?: string
 }
 
 type WidgetInstance = {
@@ -34,7 +40,7 @@ const createMountHost = (clientId: string) => {
   return host
 }
 
-const renderApp = (host: HTMLElement, clientId: string, configEndpoint?: string) => {
+const renderApp = (host: HTMLElement, options: InitOptions) => {
   const shadowRoot = host.attachShadow({ mode: 'open' })
   const styleTag = document.createElement('style')
   styleTag.textContent = widgetStyles
@@ -46,7 +52,7 @@ const renderApp = (host: HTMLElement, clientId: string, configEndpoint?: string)
   const root: Root = createRoot(mountPoint)
   root.render(
     <StrictMode>
-      <WidgetApp clientId={clientId} configEndpoint={configEndpoint} emitEvent={emitEvent} />
+      <WidgetApp {...options} emitEvent={emitEvent} />
     </StrictMode>,
   )
 
@@ -62,7 +68,9 @@ const ensureDomReady = (callback: () => void) => {
   callback()
 }
 
-export const initByHandleChat = ({ clientId, configEndpoint }: InitOptions) => {
+export const initByHandleChat = (options: InitOptions) => {
+  const { clientId } = options
+
   if (!clientId) {
     console.warn('[ByHandleChat] Missing clientId. Skipping initialization.')
     return null
@@ -74,7 +82,7 @@ export const initByHandleChat = ({ clientId, configEndpoint }: InitOptions) => {
 
   const mount = () => {
     const host = createMountHost(clientId)
-    const { root } = renderApp(host, clientId, configEndpoint)
+    const { root } = renderApp(host, options)
 
     const instance: WidgetInstance = {
       clientId,
@@ -90,7 +98,7 @@ export const initByHandleChat = ({ clientId, configEndpoint }: InitOptions) => {
   }
 
   if (!document.body) {
-    ensureDomReady(() => initByHandleChat({ clientId, configEndpoint }))
+    ensureDomReady(() => initByHandleChat(options))
     return null
   }
 
@@ -114,9 +122,17 @@ const autoBootstrap = () => {
     return
   }
 
-  const configEndpoint = script.dataset.configUrl
   ensureDomReady(() => {
-    initByHandleChat({ clientId, configEndpoint })
+    initByHandleChat({
+      clientId,
+      userId: script.dataset.userId,
+      calendarSettingId: script.dataset.calendarSettingId,
+      chatbotId: script.dataset.chatbotId,
+      brandName: script.dataset.brandName,
+      primaryColor: script.dataset.primaryColor,
+      welcomeMessage: script.dataset.welcomeMessage,
+      logoUrl: script.dataset.logoUrl,
+    })
   })
 }
 
