@@ -22,3 +22,15 @@ export type BookingState =
   | { status: 'details'; days: BookingDay[]; selectedDate: string; selection: BookingSelection }
   | { status: 'submitting'; selection: BookingSelection; form: BookingForm }
   | { status: 'success'; selection: BookingSelection; form: BookingForm }
+
+export type InquiryForm = {
+  fullName: string
+  email: string
+  question: string
+}
+
+export type InquiryState =
+  | { status: 'idle' }
+  | { status: 'form' }
+  | { status: 'submitting'; form: InquiryForm }
+  | { status: 'success'; form: InquiryForm }

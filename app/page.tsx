@@ -1,9 +1,9 @@
-import { StrictMode, useEffect } from 'react'
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import { initByHandleChat } from './widget'
+'use client'
 
-const DevApp = () => {
+import { useEffect } from 'react'
+import { initByHandleChat } from '../src/widget'
+
+export default function Home() {
   useEffect(() => {
     // Try to get parameters from URL first
     const urlParams = new URLSearchParams(window.location.search)
@@ -22,7 +22,7 @@ const DevApp = () => {
       chatbotId,
       brandName: urlParams.get('brand-name') || 'Handle',
       primaryColor: urlParams.get('primary-color') || '#2563eb',
-      welcomeMessage: urlParams.get('welcome-message') || "Hey there! I'm the Handle assistant. Im here to answer your inquiries, Book appointments and handle payments",
+      welcomeMessage: urlParams.get('welcome-message') || "Hey there! I'm the Handle assistant. Im here to answer your inquiries, Book appointments and handle payments!",
       logoUrl: urlParams.get('logo-url') || undefined,
       clientId: urlParams.get('client-id') || undefined,
     })
@@ -34,10 +34,3 @@ const DevApp = () => {
     </main>
   )
 }
-
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <DevApp />
-  </StrictMode>,
-)
-

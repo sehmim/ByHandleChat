@@ -2,14 +2,19 @@ import { useCallback, useEffect, useRef, useState, type CSSProperties } from 're
 import { MessageProvider } from '../state/MessageProvider'
 import type { AnalyticsEvent, ClientConfig } from '../types'
 import { ChatLauncher } from './widget/ChatLauncher'
+import { ChatTranscript } from './widget/ChatTranscript'
+import { Composer } from './widget/Composer'
 import { SuggestionCards } from './widget/SuggestionCards'
 import { BookingAvailability } from './widget/booking/BookingAvailability'
 import { BookingDetails } from './widget/booking/BookingDetails'
 import { BookingSubmitting } from './widget/booking/BookingSubmitting'
 import { BookingSuccess } from './widget/booking/BookingSuccess'
 import { mockFetchAvailability, mockSubmitBooking } from './widget/booking/helpers'
+import { InquiryForm } from './widget/inquiry/InquiryForm'
+import { InquirySubmitting } from './widget/inquiry/InquirySubmitting'
+import { InquirySuccess } from './widget/inquiry/InquirySuccess'
 import { WidgetHeader } from './widget/WidgetHeader'
-import type { BookingForm, BookingSelection, BookingState } from './widget/types'
+import type { BookingForm, BookingSelection, BookingState, InquiryForm as InquiryFormData, InquiryState } from './widget/types'
 
 type WidgetAppProps = {
   userId: string
@@ -40,8 +45,10 @@ export const WidgetApp = ({
   const [isOpen, setIsOpen] = useState(false)
   const [logoFailed, setLogoFailed] = useState(false)
   const [bookingState, setBookingState] = useState<BookingState>({ status: 'idle' })
+  const [inquiryState, setInquiryState] = useState<InquiryState>({ status: 'idle' })
   const bookingRequestRef = useRef(0)
   const bookingSubmissionRef = useRef(0)
+  const inquirySubmissionRef = useRef(0)
 
   const config: ClientConfig = {
     clientId: clientId || userId, // Use userId as fallback for clientId
@@ -133,6 +140,28 @@ export const WidgetApp = ({
     })
   }, [loadBookingAvailability])
 
+  // Inquiry handlers
+  const startInquiryFlow = useCallback(() => {
+    setInquiryState({ status: 'form' })
+  }, [])
+
+  const closeInquiry = useCallback(() => {
+    inquirySubmissionRef.current += 1
+    setInquiryState({ status: 'idle' })
+  }, [])
+
+  const handleInquiryFormSubmit = useCallback((form: InquiryFormData) => {
+    inquirySubmissionRef.current += 1
+    const submissionId = inquirySubmissionRef.current
+    setInquiryState({ status: 'submitting', form })
+
+    // Simulate API call (2 seconds)
+    setTimeout(() => {
+      if (inquirySubmissionRef.current !== submissionId) return
+      setInquiryState({ status: 'success', form })
+    }, 2000)
+  }, [])
+
   const updatePanelState = useCallback(
     (resolver: (previous: boolean) => boolean) => {
       setIsOpen((prev) => {
@@ -154,10 +183,11 @@ export const WidgetApp = ({
   }, [updatePanelState])
 
   const bookingActive = bookingState.status !== 'idle'
+  const inquiryActive = inquiryState.status !== 'idle'
   const showAvailability = ['loading', 'error', 'ready'].includes(bookingState.status)
   const accentStyle = { '--byh-primary': primaryColor } as CSSProperties
   const panelClasses = [
-    'w-full origin-bottom-right rounded-xl border border-slate-200/60 bg-white shadow-lg transition',
+    'w-full h-[600px] max-h-[60vh] flex flex-col origin-bottom-right rounded-lg border border-slate-200/40 bg-white shadow-sm transition',
     isOpen
       ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
       : 'pointer-events-none translate-y-3 scale-95 opacity-0',
@@ -168,7 +198,7 @@ export const WidgetApp = ({
       className="pointer-events-none fixed bottom-5 right-5 flex w-[360px] max-w-[calc(100vw-32px)] flex-col items-end gap-2 z-[2147483000]"
       style={accentStyle}
     >
-      <section aria-hidden={!isOpen} className={panelClasses}>
+      <section className={panelClasses}>
         <WidgetHeader
           brandName={brandName}
           logoUrl={logoUrl}
@@ -178,9 +208,14 @@ export const WidgetApp = ({
         />
 
         <MessageProvider clientId={clientId || userId} welcomeMessage={welcomeMessage} emitEvent={emitEvent}>
-          <div className="flex flex-col gap-2 bg-slate-50/40 px-4 py-3">
-              {!bookingActive && (
-                <SuggestionCards bookingActive={bookingActive} onStartBooking={startBookingFlow} />
+          <div className="flex flex-col gap-2 bg-slate-50/40 px-4 py-3 flex-1 overflow-y-auto">
+              {!bookingActive && !inquiryActive && (
+                <SuggestionCards
+                  bookingActive={bookingActive}
+                  inquiryActive={inquiryActive}
+                  onStartBooking={startBookingFlow}
+                  onStartInquiry={startInquiryFlow}
+                />
               )}
               {showAvailability && (
                 <BookingAvailability
@@ -211,13 +246,29 @@ export const WidgetApp = ({
                   onBack={handleBackToAvailability}
                 />
               )}
-              {/* {!bookingActive && <ChatTranscript />} */}
+              {inquiryState.status === 'form' && (
+                <InquiryForm
+                  config={config}
+                  onClose={closeInquiry}
+                  onSubmit={handleInquiryFormSubmit}
+                />
+              )}
+              {inquiryState.status === 'submitting' && (
+                <InquirySubmitting form={inquiryState.form} />
+              )}
+              {inquiryState.status === 'success' && (
+                <InquirySuccess
+                  form={inquiryState.form}
+                  onClose={closeInquiry}
+                />
+              )}
+              {!bookingActive && !inquiryActive && <ChatTranscript />}
             </div>
-            {/* {!bookingActive && (
+            {!bookingActive && !inquiryActive && (
               <div className="border-t border-slate-200/60 bg-white px-4 py-3">
                 <Composer />
               </div>
-            )} */}
+            )}
           </MessageProvider>
       </section>
 

@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { WidgetApp } from './components/WidgetApp'
-import widgetStyles from './widget.css?inline'
+import './widget.css'
 import type { AnalyticsEvent } from './types'
 
 type InitOptions = {
@@ -41,13 +41,8 @@ const createMountHost = (userId: string) => {
 }
 
 const renderApp = (host: HTMLElement, options: InitOptions) => {
-  const shadowRoot = host.attachShadow({ mode: 'open' })
-  const styleTag = document.createElement('style')
-  styleTag.textContent = widgetStyles
-  shadowRoot.appendChild(styleTag)
-
   const mountPoint = document.createElement('div')
-  shadowRoot.appendChild(mountPoint)
+  host.appendChild(mountPoint)
 
   const root: Root = createRoot(mountPoint)
   root.render(
@@ -56,7 +51,7 @@ const renderApp = (host: HTMLElement, options: InitOptions) => {
     </StrictMode>,
   )
 
-  return { root, shadowRoot }
+  return { root }
 }
 
 const ensureDomReady = (callback: () => void) => {
