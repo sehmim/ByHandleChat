@@ -1,10 +1,16 @@
 import type { BookingSelection, BookingState } from '../types'
-import { formatDateShort } from './helpers'
+import { formatCurrency, formatDateShort } from './helpers'
+
+type AvailabilityState = Extract<
+  BookingState,
+  { status: 'availability-loading' | 'availability-error' | 'availability-ready' }
+>
 
 type BookingAvailabilityProps = {
-  state: BookingState
+  state: AvailabilityState
   onClose: () => void
   onRetry: () => void
+  onChangeService: () => void
   onSelectDate: (date: string) => void
   onSelectSlot: (selection: BookingSelection) => void
 }
@@ -13,22 +19,25 @@ export const BookingAvailability = ({
   state,
   onClose,
   onRetry,
+  onChangeService,
   onSelectDate,
   onSelectSlot,
 }: BookingAvailabilityProps) => {
-  if (state.status === 'loading') {
+  if (state.status === 'availability-loading') {
     return (
       <section className="rounded-lg border border-slate-200/40 bg-slate-50 p-4">
         <header>
-          <p className="text-sm font-semibold text-slate-900">Loading availability</p>
-          <p className="mt-1 text-xs text-slate-500">Checking the next few days for open slots…</p>
+          <p className="text-sm font-semibold text-slate-900">Checking availability</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Looking for openings for <strong>{state.service.name}</strong>.
+          </p>
         </header>
         <p className="mt-4 text-sm text-slate-500 animate-pulse">Fetching slots…</p>
       </section>
     )
   }
 
-  if (state.status === 'error') {
+  if (state.status === 'availability-error') {
     return (
       <section className="rounded-lg border border-slate-200/40 bg-slate-50 p-4">
         <header className="flex items-start justify-between gap-4">
@@ -48,6 +57,13 @@ export const BookingAvailability = ({
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             type="button"
+            onClick={onChangeService}
+            className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-accent"
+          >
+            Choose another service
+          </button>
+          <button
+            type="button"
             onClick={onRetry}
             className="rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-sm font-semibold text-slate-700 transition hover:border-accent"
           >
@@ -58,18 +74,21 @@ export const BookingAvailability = ({
     )
   }
 
-  if (state.status !== 'ready') {
+  if (state.status !== 'availability-ready') {
     return null
   }
 
   const selectedDay = state.days.find((day) => day.date === state.selectedDate) ?? state.days[0]
+  const formattedPrice = formatCurrency(state.service.priceCents)
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-slate-200/40 bg-slate-50 p-4">
       <header className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-semibold text-slate-900">Book an appointment</p>
-          <p className="mt-1 text-xs text-slate-500">Select a date and time that works best for you.</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Select a date and time for <strong>{state.service.name.toLowerCase()}</strong>.
+          </p>
         </div>
         <button
           type="button"
@@ -80,6 +99,26 @@ export const BookingAvailability = ({
           ×
         </button>
       </header>
+
+      <div className="flex flex-col gap-3 rounded-lg border border-slate-200/40 bg-white p-3 text-sm">
+        <div className="flex items-center justify-between gap-2 text-slate-900">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Selected service</p>
+            <p className="mt-1 font-semibold">{state.service.name}</p>
+          </div>
+          <div className="text-right">
+            <p className="font-semibold">{formattedPrice}</p>
+            <p className="text-xs text-slate-500">{state.service.durationMinutes} min</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={onChangeService}
+          className="self-start text-xs font-semibold text-slate-600 underline-offset-4 hover:text-slate-900"
+        >
+          Change service
+        </button>
+      </div>
 
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Dates</p>

@@ -1,12 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import type { BookingForm, BookingState } from '../types'
-import { formatDateLong } from './helpers'
-import { useCreateAppointment } from '../../../hooks/useCreateAppointment'
-import type { ClientConfig } from '../../../types'
+import { formatCurrency, formatDateLong } from './helpers'
 
 type BookingDetailsProps = {
   state: Extract<BookingState, { status: 'details' }>
-  config: ClientConfig
   onBack: () => void
   onClose: () => void
   onSubmit: (form: BookingForm) => void
@@ -14,9 +11,8 @@ type BookingDetailsProps = {
 
 const initialForm: BookingForm = { fullName: '', email: '', notes: '' }
 
-export const BookingDetails = ({ state, config, onBack, onClose, onSubmit }: BookingDetailsProps) => {
+export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDetailsProps) => {
   const [form, setForm] = useState(initialForm)
-  const { createAppointment, loading: submitting } = useCreateAppointment()
 
   useEffect(() => {
     setForm(initialForm)
@@ -25,9 +21,9 @@ export const BookingDetails = ({ state, config, onBack, onClose, onSubmit }: Boo
   const isValid =
     form.fullName.trim().length > 1 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim().toLowerCase())
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    if (!isValid || submitting) return
+    if (!isValid) return
 
     const bookingForm: BookingForm = {
       fullName: form.fullName.trim(),
@@ -35,48 +31,11 @@ export const BookingDetails = ({ state, config, onBack, onClose, onSubmit }: Boo
       notes: form.notes.trim(),
     }
 
-    // Parse the time slot (e.g., "2:00 PM")
-    const [time, period] = state.selection.slot.split(' ')
-    const [hours, minutes] = time.split(':').map(Number)
-    let hour24 = hours
-    if (period === 'PM' && hours !== 12) hour24 += 12
-    if (period === 'AM' && hours === 12) hour24 = 0
-
-    // Create start and end times
-    const startDate = new Date(state.selection.date)
-    startDate.setHours(hour24, minutes || 0, 0, 0)
-
-    const endDate = new Date(startDate)
-    endDate.setMinutes(endDate.getMinutes() + 30) // Default 30 min duration
-
-    // Only call API if we have required config
-    if (config.userId && config.calendarSettingId) {
-      const result = await createAppointment({
-        userId: config.userId,
-        calendarSettingId: config.calendarSettingId,
-        startDateTime: startDate.toISOString(),
-        endDateTime: endDate.toISOString(),
-        guestName: bookingForm.fullName,
-        guestEmail: bookingForm.email || undefined,
-        notes: bookingForm.notes || undefined,
-        chatbotId: config.chatbotId,
-      })
-
-      if (result.success) {
-        // API call succeeded, proceed with the form submission
-        onSubmit(bookingForm)
-      } else {
-        // Handle error - could show an alert or error message
-        console.error('Failed to create appointment:', result.error)
-        alert(result.error?.error || 'Failed to create appointment. Please try again.')
-      }
-    } else {
-      // No API config, just proceed with mock flow
-      onSubmit(bookingForm)
-    }
+    onSubmit(bookingForm)
   }
 
   const formattedDate = formatDateLong(state.selection.date)
+  const priceLabel = formatCurrency(state.service.priceCents)
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-slate-200/40 bg-white p-4">
@@ -112,6 +71,11 @@ export const BookingDetails = ({ state, config, onBack, onClose, onSubmit }: Boo
         <p className="mt-1 text-sm font-semibold text-slate-900">
           {formattedDate} · {state.selection.slot}
         </p>
+        <p className="mt-1 text-sm text-slate-600">
+          {state.service.name} · {state.service.durationMinutes} min
+        </p>
+        <p className="mt-1 text-sm font-semibold text-slate-900">{priceLabel}</p>
+        <p className="mt-1 text-xs text-slate-500">We will send the receipt to your email after payment.</p>
         <button
           type="button"
           onClick={onBack}
@@ -154,10 +118,10 @@ export const BookingDetails = ({ state, config, onBack, onClose, onSubmit }: Boo
         </label>
         <button
           type="submit"
-          disabled={!isValid || submitting}
+          disabled={!isValid}
           className="flex items-center justify-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-60"
         >
-          {submitting ? 'Creating appointment...' : 'Continue'}
+          Continue to payment
         </button>
       </form>
     </section>

@@ -4,6 +4,8 @@ import { WidgetApp } from './components/WidgetApp'
 import './widget.css'
 import type { AnalyticsEvent } from './types'
 
+type ChatbotPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+
 type InitOptions = {
   userId: string
   calendarSettingId: string
@@ -13,6 +15,11 @@ type InitOptions = {
   primaryColor?: string
   welcomeMessage?: string
   logoUrl?: string
+  panelWidth?: number
+  panelHeight?: number
+  position?: ChatbotPosition
+  zIndex?: number
+  launcherMessage?: string
 }
 
 type WidgetInstance = {
@@ -20,13 +27,44 @@ type WidgetInstance = {
   destroy: () => void
 }
 
+type WidgetUiConfig = {
+  title: string
+  welcomeMessage: string
+  primaryColor: string
+  logoUrl: string
+  panelWidth: number
+  panelHeight: number
+  position: ChatbotPosition
+  zIndex: number
+  launcherMessage: string
+}
+
 const instances = new Map<string, WidgetInstance>()
+const pendingInits = new Map<string, Promise<WidgetInstance | null>>()
 
 const emitEvent = (event: AnalyticsEvent) => {
   window.dispatchEvent(new CustomEvent('byhandle-chat-event', { detail: event }))
 }
 
-const createMountHost = (userId: string) => {
+const mockFetchWidgetConfig = (userId: string): Promise<WidgetUiConfig> =>
+  new Promise((resolve) => {
+    setTimeout(() => {
+      resolve({
+        title: 'Handle Concierge',
+        welcomeMessage:
+          "Hi! I'm the Handle concierge. Share what you’re looking for and I’ll get everything scheduled.",
+        primaryColor: '#0f172a',
+        logoUrl: 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg',
+        panelWidth: 400,
+        panelHeight: 580,
+        position: userId === 'left' ? 'bottom-left' : 'bottom-right',
+        zIndex: 2147483600,
+        launcherMessage: 'Need help booking? Tap to chat.',
+      })
+    }, 500)
+  })
+
+const createMountHost = (userId: string, zIndex: number) => {
   const host = document.createElement('div')
   host.dataset.byhandleUser = userId
   host.style.all = 'initial'
@@ -35,19 +73,32 @@ const createMountHost = (userId: string) => {
   host.style.right = '0'
   host.style.width = '0'
   host.style.height = '0'
-  host.style.zIndex = '2147483000'
+  host.style.zIndex = String(zIndex)
   document.body.appendChild(host)
   return host
 }
 
-const renderApp = (host: HTMLElement, options: InitOptions) => {
+const renderApp = (host: HTMLElement, options: InitOptions, uiConfig: WidgetUiConfig) => {
   const mountPoint = document.createElement('div')
   host.appendChild(mountPoint)
+
+  const widgetProps = {
+    ...options,
+    brandName: uiConfig.title,
+    welcomeMessage: uiConfig.welcomeMessage,
+    primaryColor: uiConfig.primaryColor,
+    logoUrl: uiConfig.logoUrl,
+    panelWidth: uiConfig.panelWidth,
+    panelHeight: uiConfig.panelHeight,
+    position: uiConfig.position,
+    zIndex: uiConfig.zIndex,
+    launcherMessage: uiConfig.launcherMessage,
+  }
 
   const root: Root = createRoot(mountPoint)
   root.render(
     <StrictMode>
-      <WidgetApp {...options} emitEvent={emitEvent} />
+      <WidgetApp {...widgetProps} emitEvent={emitEvent} />
     </StrictMode>,
   )
 
@@ -63,7 +114,7 @@ const ensureDomReady = (callback: () => void) => {
   callback()
 }
 
-export const initByHandleChat = (options: InitOptions) => {
+export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | null> | null => {
   const { userId, calendarSettingId, chatbotId } = options
 
   if (!userId) {
@@ -82,32 +133,46 @@ export const initByHandleChat = (options: InitOptions) => {
   }
 
   if (instances.has(userId)) {
-    return instances.get(userId)!
+    return Promise.resolve(instances.get(userId)!)
   }
 
-  const mount = () => {
-    const host = createMountHost(userId)
-    const { root } = renderApp(host, options)
+  if (pendingInits.has(userId)) {
+    return pendingInits.get(userId)!
+  }
 
-    const instance: WidgetInstance = {
-      userId,
-      destroy: () => {
-        root.unmount()
-        host.remove()
-        instances.delete(userId)
-      },
+  const mount = async () => {
+    try {
+      const uiConfig = await mockFetchWidgetConfig(userId)
+      const host = createMountHost(userId, uiConfig.zIndex)
+      const { root } = renderApp(host, options, uiConfig)
+
+      const instance: WidgetInstance = {
+        userId,
+        destroy: () => {
+          root.unmount()
+          host.remove()
+          instances.delete(userId)
+        },
+      }
+
+      instances.set(userId, instance)
+      return instance
+    } finally {
+      pendingInits.delete(userId)
     }
-
-    instances.set(userId, instance)
-    return instance
   }
 
   if (!document.body) {
-    ensureDomReady(() => initByHandleChat(options))
+    ensureDomReady(() => {
+      const promise = initHandleChat(options)
+      if (promise) pendingInits.set(userId, promise)
+    })
     return null
   }
 
-  return mount()
+  const mountPromise = mount()
+  pendingInits.set(userId, mountPromise)
+  return mountPromise
 }
 
 const findHostScript = (scriptElement?: HTMLScriptElement | null) => {
@@ -135,7 +200,7 @@ const autoBootstrap = () => {
   }
 
   ensureDomReady(() => {
-    initByHandleChat({
+    void initHandleChat({
       userId,
       calendarSettingId,
       chatbotId,
@@ -151,13 +216,13 @@ const autoBootstrap = () => {
 declare global {
   interface Window {
     HandleChat?: {
-      init: (options: InitOptions) => WidgetInstance | null
+      init: (options: InitOptions) => Promise<WidgetInstance | null> | null
     }
   }
 }
 
 if (typeof window !== 'undefined') {
-  window.HandleChat = window.HandleChat ?? { init: initByHandleChat }
+  window.HandleChat = window.HandleChat ?? { init: initHandleChat }
 
   // Always auto-bootstrap if script tag is found
   autoBootstrap()

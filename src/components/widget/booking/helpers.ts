@@ -1,8 +1,32 @@
-import type { BookingDay } from '../types'
+import type { BookingDay, BookingService } from '../types'
 
 const SLOT_INTERVAL_MINUTES = 30
 const SLOT_START_MINUTES = 9 * 60
 const SLOT_END_MINUTES = 17 * 60
+
+const mockServices: BookingService[] = [
+  {
+    id: 'consult',
+    name: 'Initial Consultation',
+    durationMinutes: 30,
+    priceCents: 7500,
+    description: 'A 30-minute call to understand your needs and outline next steps.',
+  },
+  {
+    id: 'deep-dive',
+    name: 'Deep Dive Session',
+    durationMinutes: 60,
+    priceCents: 14000,
+    description: 'A full hour dedicated to strategy, planning, and recommendations.',
+  },
+  {
+    id: 'vip',
+    name: 'Priority VIP Visit',
+    durationMinutes: 90,
+    priceCents: 26000,
+    description: 'Hands-on working session with guaranteed follow-up support.',
+  },
+]
 
 const formatSlotLabel = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
@@ -41,10 +65,22 @@ export const mockFetchAvailability = () =>
     setTimeout(() => resolve(createMockAvailability()), 600)
   })
 
+export const mockFetchServices = () =>
+  new Promise<BookingService[]>((resolve) => {
+    setTimeout(() => resolve(mockServices.map((service) => ({ ...service }))), 500)
+  })
+
 export const mockSubmitBooking = () =>
   new Promise<void>((resolve) => {
     setTimeout(resolve, 900)
   })
+
+export const formatCurrency = (amountInCents: number, currency = 'USD') =>
+  new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+  }).format(amountInCents / 100)
 
 export const formatDateShort = (isoDate: string) =>
   new Date(isoDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })

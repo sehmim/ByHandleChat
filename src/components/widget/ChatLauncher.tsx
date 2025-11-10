@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 
 type ChatLauncherProps = {
   isOpen: boolean
-  brandName?: string
   logoUrl?: string
+  tooltipMessage?: string
   onToggle: () => void
 }
 
-export const ChatLauncher = ({ isOpen, logoUrl, onToggle }: ChatLauncherProps) => {
+const DEFAULT_TOOLTIP = '👋🏽 Hey! Let me help you'
+
+export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP, onToggle }: ChatLauncherProps) => {
   const [showTooltip, setShowTooltip] = useState(false)
   // Default to the Handle logo
   const defaultLogoUrl = logoUrl || 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg'
@@ -40,10 +42,8 @@ export const ChatLauncher = ({ isOpen, logoUrl, onToggle }: ChatLauncherProps) =
         <div className="absolute bottom-full right-0 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
           <div className="relative">
             <div className="rounded-lg bg-white border border-slate-200/40 shadow-sm px-4 py-2.5 whitespace-nowrap">
-              <p className="text-sm font-normal text-slate-700">
-                👋🏽 Hey! Let me help you
-              </p>
-            </div> 
+              <p className="text-sm font-normal text-slate-700">{tooltipMessage}</p>
+            </div>
             {/* Arrow */}
             <div className="absolute -bottom-1 right-6 w-2 h-2 bg-white border-r border-b border-slate-200/40 transform rotate-45"></div>
           </div>

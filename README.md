@@ -16,7 +16,7 @@ npm run dev      # serves index.html for the demo harness
 ```
 
 - Update `public/mock-config.json` to preview different branding locally.
-- The dev harness (`src/main.tsx`) simply renders instructions and calls `initByHandleChat` so you can interact with the floating widget in the bottom-right corner.
+- The dev harness (`src/main.tsx`) simply renders instructions and calls `initHandleChat` so you can interact with the floating widget in the bottom-right corner.
 
 ## Production Build
 ```bash

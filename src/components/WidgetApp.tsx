@@ -5,16 +5,26 @@ import { ChatLauncher } from './widget/ChatLauncher'
 import { ChatTranscript } from './widget/ChatTranscript'
 import { Composer } from './widget/Composer'
 import { SuggestionCards } from './widget/SuggestionCards'
+import { BookingServiceSelection } from './widget/booking/BookingServiceSelection'
 import { BookingAvailability } from './widget/booking/BookingAvailability'
 import { BookingDetails } from './widget/booking/BookingDetails'
+import { BookingPayment } from './widget/booking/BookingPayment'
 import { BookingSubmitting } from './widget/booking/BookingSubmitting'
 import { BookingSuccess } from './widget/booking/BookingSuccess'
-import { mockFetchAvailability, mockSubmitBooking } from './widget/booking/helpers'
+import { mockFetchAvailability, mockFetchServices, mockSubmitBooking } from './widget/booking/helpers'
 import { InquiryForm } from './widget/inquiry/InquiryForm'
 import { InquirySubmitting } from './widget/inquiry/InquirySubmitting'
 import { InquirySuccess } from './widget/inquiry/InquirySuccess'
 import { WidgetHeader } from './widget/WidgetHeader'
-import type { BookingForm, BookingSelection, BookingState, InquiryForm as InquiryFormData, InquiryState } from './widget/types'
+import type {
+  BookingForm,
+  BookingPayment as BookingPaymentDetails,
+  BookingSelection,
+  BookingService,
+  BookingState,
+  InquiryForm as InquiryFormData,
+  InquiryState,
+} from './widget/types'
 
 type WidgetAppProps = {
   userId: string
@@ -25,6 +35,11 @@ type WidgetAppProps = {
   primaryColor?: string
   welcomeMessage?: string
   logoUrl?: string
+  panelWidth?: number
+  panelHeight?: number
+  position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
+  zIndex?: number
+  launcherMessage?: string
   emitEvent?: (event: AnalyticsEvent) => void
 }
 
@@ -40,9 +55,16 @@ export const WidgetApp = ({
   primaryColor = DEFAULT_PRIMARY,
   welcomeMessage = FALLBACK_WELCOME,
   logoUrl,
+  panelWidth,
+  panelHeight,
+  position = 'bottom-right',
+  zIndex,
+  launcherMessage,
   emitEvent,
 }: WidgetAppProps) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const [isMobileViewport, setIsMobileViewport] = useState(false)
   const [logoFailed, setLogoFailed] = useState(false)
   const [bookingState, setBookingState] = useState<BookingState>({ status: 'idle' })
   const [inquiryState, setInquiryState] = useState<InquiryState>({ status: 'idle' })
@@ -50,11 +72,13 @@ export const WidgetApp = ({
   const bookingSubmissionRef = useRef(0)
   const inquirySubmissionRef = useRef(0)
 
+  const resolvedBrandName = brandName || 'Handle'
+
   const config: ClientConfig = {
     clientId: clientId || userId, // Use userId as fallback for clientId
     welcomeMessage,
     primaryColor,
-    brandName,
+    brandName: resolvedBrandName,
     logoUrl,
     userId,
     calendarSettingId,
@@ -65,28 +89,60 @@ export const WidgetApp = ({
     setLogoFailed(false)
   }, [logoUrl])
 
-  const loadBookingAvailability = useCallback(() => {
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+    const mediaQuery = window.matchMedia('(max-width: 640px)')
+    const handleChange = () => setIsMobileViewport(mediaQuery.matches)
+    handleChange()
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', handleChange)
+      return () => mediaQuery.removeEventListener('change', handleChange)
+    }
+    mediaQuery.addListener(handleChange)
+    return () => mediaQuery.removeListener(handleChange)
+  }, [])
+
+  const loadServices = useCallback(() => {
     bookingRequestRef.current += 1
     const requestId = bookingRequestRef.current
-    setBookingState({ status: 'loading' })
+    setBookingState({ status: 'services-loading' })
+    mockFetchServices()
+      .then((services) => {
+        if (bookingRequestRef.current !== requestId) return
+        if (!services.length) {
+          setBookingState({ status: 'services-error' })
+          return
+        }
+        setBookingState({ status: 'services-ready', services, selectedServiceId: services[0].id })
+      })
+      .catch(() => {
+        if (bookingRequestRef.current !== requestId) return
+        setBookingState({ status: 'services-error' })
+      })
+  }, [])
+
+  const beginAvailabilityLookup = useCallback((service: BookingService) => {
+    bookingRequestRef.current += 1
+    const requestId = bookingRequestRef.current
+    setBookingState({ status: 'availability-loading', service })
     mockFetchAvailability()
       .then((days) => {
         if (bookingRequestRef.current !== requestId) return
         if (!days.length) {
-          setBookingState({ status: 'error' })
+          setBookingState({ status: 'availability-error', service })
           return
         }
-        setBookingState({ status: 'ready', days, selectedDate: days[0].date })
+        setBookingState({ status: 'availability-ready', service, days, selectedDate: days[0].date })
       })
       .catch(() => {
         if (bookingRequestRef.current !== requestId) return
-        setBookingState({ status: 'error' })
+        setBookingState({ status: 'availability-error', service })
       })
   }, [])
 
   const startBookingFlow = useCallback(() => {
-    loadBookingAvailability()
-  }, [loadBookingAvailability])
+    loadServices()
+  }, [loadServices])
 
   const closeBooking = useCallback(() => {
     bookingRequestRef.current += 1
@@ -94,51 +150,120 @@ export const WidgetApp = ({
     setBookingState({ status: 'idle' })
   }, [])
 
+  const selectServiceOption = useCallback((serviceId: string) => {
+    setBookingState((prev) => {
+      if (prev.status !== 'services-ready') return prev
+      if (prev.selectedServiceId === serviceId) return prev
+      if (!prev.services.some((service) => service.id === serviceId)) return prev
+      return { ...prev, selectedServiceId: serviceId }
+    })
+  }, [])
+
+  const handleServiceContinue = useCallback(() => {
+    setBookingState((prev) => {
+      if (prev.status !== 'services-ready') return prev
+      const selectedService =
+        prev.services.find((service) => service.id === prev.selectedServiceId) ?? prev.services[0]
+      if (!selectedService) return prev
+      beginAvailabilityLookup(selectedService)
+      return prev
+    })
+  }, [beginAvailabilityLookup])
+
+  const retryAvailability = useCallback(() => {
+    setBookingState((prev) => {
+      if (prev.status !== 'availability-error') return prev
+      beginAvailabilityLookup(prev.service)
+      return prev
+    })
+  }, [beginAvailabilityLookup])
+
   const selectBookingDate = useCallback((isoDate: string) => {
     setBookingState((prev) => {
-      if (prev.status !== 'ready') return prev
+      if (prev.status !== 'availability-ready') return prev
       return { ...prev, selectedDate: isoDate }
     })
   }, [])
 
   const handleSlotSelection = useCallback((selection: BookingSelection) => {
     setBookingState((prev) => {
-      if (prev.status !== 'ready') return prev
-      return { status: 'details', days: prev.days, selectedDate: selection.date, selection }
+      if (prev.status !== 'availability-ready') return prev
+      return {
+        status: 'details',
+        service: prev.service,
+        days: prev.days,
+        selectedDate: selection.date,
+        selection,
+      }
     })
   }, [])
 
   const handleBookingBackToSlots = useCallback(() => {
     setBookingState((prev) => {
       if (prev.status !== 'details') return prev
-      return { status: 'ready', days: prev.days, selectedDate: prev.selection.date }
+      return {
+        status: 'availability-ready',
+        service: prev.service,
+        days: prev.days,
+        selectedDate: prev.selection.date,
+      }
     })
   }, [])
 
   const handleBookingFormSubmit = useCallback((form: BookingForm) => {
     setBookingState((prev) => {
       if (prev.status !== 'details') return prev
-      const selection = prev.selection
+      return {
+        status: 'payment',
+        service: prev.service,
+        selection: prev.selection,
+        form,
+        days: prev.days,
+      }
+    })
+  }, [])
+
+  const handlePaymentBack = useCallback(() => {
+    setBookingState((prev) => {
+      if (prev.status !== 'payment') return prev
+      return {
+        status: 'details',
+        service: prev.service,
+        days: prev.days,
+        selectedDate: prev.selection.date,
+        selection: prev.selection,
+      }
+    })
+  }, [])
+
+  const handlePaymentSubmit = useCallback((payment: BookingPaymentDetails) => {
+    setBookingState((prev) => {
+      if (prev.status !== 'payment') return prev
+      const payload = {
+        service: prev.service,
+        selection: prev.selection,
+        form: prev.form,
+        payment,
+      }
       bookingSubmissionRef.current += 1
       const submissionId = bookingSubmissionRef.current
       mockSubmitBooking().then(() => {
         if (bookingSubmissionRef.current !== submissionId) return
-        setBookingState({ status: 'success', selection, form })
+        setBookingState({ status: 'success', ...payload })
       })
-      return { status: 'submitting', selection, form }
+      return { status: 'submitting', ...payload }
     })
   }, [])
 
   const handleBackToAvailability = useCallback(() => {
+    bookingSubmissionRef.current += 1
     setBookingState((prev) => {
       if (prev.status === 'submitting' || prev.status === 'success') {
-        bookingSubmissionRef.current += 1
-        loadBookingAvailability()
-        return { status: 'loading' }
+        beginAvailabilityLookup(prev.service)
       }
       return prev
     })
-  }, [loadBookingAvailability])
+  }, [beginAvailabilityLookup])
 
   // Inquiry handlers
   const startInquiryFlow = useCallback(() => {
@@ -167,6 +292,7 @@ export const WidgetApp = ({
       setIsOpen((prev) => {
         const next = resolver(prev)
         if (next === prev) return prev
+        if (!next) setIsExpanded(false)
         emitEvent?.({ type: next ? 'chat_opened' : 'chat_closed', clientId: clientId || userId })
         return next
       })
@@ -179,31 +305,74 @@ export const WidgetApp = ({
   }, [updatePanelState])
 
   const closePanel = useCallback(() => {
+    setIsExpanded(false)
     updatePanelState(() => false)
   }, [updatePanelState])
 
+  const handleToggleExpand = useCallback(() => {
+    setIsExpanded((prev) => !prev)
+  }, [])
+
   const bookingActive = bookingState.status !== 'idle'
   const inquiryActive = inquiryState.status !== 'idle'
-  const showAvailability = ['loading', 'error', 'ready'].includes(bookingState.status)
+  const showServiceSelection = ['services-loading', 'services-error', 'services-ready'].includes(bookingState.status)
+  const showAvailability = ['availability-loading', 'availability-error', 'availability-ready'].includes(
+    bookingState.status,
+  )
   const accentStyle = { '--byh-primary': primaryColor } as CSSProperties
+  const baseWidth = panelWidth ?? 360
+  const baseHeight = panelHeight ?? 600
+  const resolvedZIndex = zIndex ?? 2147483000
+
+  const positionMap: Record<
+    NonNullable<WidgetAppProps['position']>,
+    { container: string; origin: string }
+  > = {
+    'bottom-right': { container: 'bottom-5 right-5 items-end', origin: 'origin-bottom-right' },
+    'bottom-left': { container: 'bottom-5 left-5 items-start', origin: 'origin-bottom-left' },
+    'top-right': { container: 'top-5 right-5 items-end', origin: 'origin-top-right' },
+    'top-left': { container: 'top-5 left-5 items-start', origin: 'origin-top-left' },
+  }
+
+  const positionClasses = positionMap[position] ?? positionMap['bottom-right']
+
+  const containerStyle: CSSProperties = {
+    ...accentStyle,
+    width: isExpanded ? (isMobileViewport ? '100vw' : 'min(40vw, 640px)') : `${baseWidth}px`,
+    maxWidth: isExpanded ? (isMobileViewport ? '100vw' : 'calc(100vw - 32px)') : 'calc(100vw - 32px)',
+    zIndex: resolvedZIndex,
+  }
+
+  const panelStyle: CSSProperties = isExpanded
+    ? isMobileViewport
+      ? { height: '100vh' }
+      : { height: '70vh', maxHeight: 'calc(100vh - 40px)' }
+    : { height: `${baseHeight}px`, maxHeight: 'calc(100vh - 40px)' }
+
+  const containerClasses = [
+    'pointer-events-none fixed flex flex-col gap-2 transition-all',
+    isExpanded && isMobileViewport ? 'inset-0 items-stretch' : positionClasses.container,
+  ].join(' ')
+
   const panelClasses = [
-    'w-full h-[600px] max-h-[60vh] flex flex-col origin-bottom-right rounded-lg border border-slate-200/40 bg-white shadow-sm transition',
+    'w-full flex flex-col border border-slate-200/40 bg-white shadow-sm transition',
+    positionClasses.origin,
+    isExpanded && isMobileViewport ? 'rounded-none' : 'rounded-lg',
     isOpen
       ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
       : 'pointer-events-none translate-y-3 scale-95 opacity-0',
   ].join(' ')
 
   return (
-    <div
-      className="pointer-events-none fixed bottom-5 right-5 flex w-[360px] max-w-[calc(100vw-32px)] flex-col items-end gap-2 z-[2147483000]"
-      style={accentStyle}
-    >
-      <section className={panelClasses}>
+    <div className={containerClasses} style={containerStyle}>
+      <section className={panelClasses} style={panelStyle}>
         <WidgetHeader
-          brandName={brandName}
+          brandName={resolvedBrandName}
           logoUrl={logoUrl}
           logoFailed={logoFailed}
           onLogoError={() => setLogoFailed(true)}
+          isExpanded={isExpanded}
+          onToggleExpand={handleToggleExpand}
           onClose={closePanel}
         />
 
@@ -217,31 +386,58 @@ export const WidgetApp = ({
                   onStartInquiry={startInquiryFlow}
                 />
               )}
-              {showAvailability && (
-                <BookingAvailability
-                  state={bookingState}
+              {showServiceSelection && (
+                <BookingServiceSelection
+                  state={bookingState as Extract<
+                    BookingState,
+                    { status: 'services-loading' | 'services-error' | 'services-ready' }
+                  >}
                   onClose={closeBooking}
                   onRetry={startBookingFlow}
+                  onSelectService={selectServiceOption}
+                  onContinue={handleServiceContinue}
+                />
+              )}
+              {showAvailability && (
+                <BookingAvailability
+                  state={bookingState as Extract<
+                    BookingState,
+                    { status: 'availability-loading' | 'availability-error' | 'availability-ready' }
+                  >}
+                  onClose={closeBooking}
+                  onRetry={retryAvailability}
+                  onChangeService={startBookingFlow}
                   onSelectDate={selectBookingDate}
                   onSelectSlot={handleSlotSelection}
                 />
               )}
               {bookingState.status === 'details' && (
-                <BookingDetails
-                  state={bookingState}
-                  config={config}
-                  onBack={handleBookingBackToSlots}
+                <BookingDetails state={bookingState} onBack={handleBookingBackToSlots} onClose={closeBooking} onSubmit={handleBookingFormSubmit} />
+              )}
+              {bookingState.status === 'payment' && (
+                <BookingPayment
+                  service={bookingState.service}
+                  selection={bookingState.selection}
+                  form={bookingState.form}
+                  onBack={handlePaymentBack}
                   onClose={closeBooking}
-                  onSubmit={handleBookingFormSubmit}
+                  onConfirmPayment={handlePaymentSubmit}
                 />
               )}
               {bookingState.status === 'submitting' && (
-                <BookingSubmitting selection={bookingState.selection} onBack={handleBackToAvailability} />
+                <BookingSubmitting
+                  service={bookingState.service}
+                  selection={bookingState.selection}
+                  payment={bookingState.payment}
+                  onBack={handleBackToAvailability}
+                />
               )}
               {bookingState.status === 'success' && (
                 <BookingSuccess
+                  service={bookingState.service}
                   selection={bookingState.selection}
                   form={bookingState.form}
+                  payment={bookingState.payment}
                   onClose={closeBooking}
                   onBack={handleBackToAvailability}
                 />
@@ -272,7 +468,7 @@ export const WidgetApp = ({
           </MessageProvider>
       </section>
 
-      <ChatLauncher isOpen={isOpen} brandName={brandName} logoUrl={logoUrl} onToggle={togglePanel} />
+      <ChatLauncher isOpen={isOpen} logoUrl={logoUrl} tooltipMessage={launcherMessage} onToggle={togglePanel} />
     </div>
   )
 }

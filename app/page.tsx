@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { initByHandleChat } from '../src/widget'
+import { initHandleChat } from '../src/widget'
 
 export default function Home() {
   useEffect(() => {
@@ -16,7 +16,7 @@ export default function Home() {
     const calendarSettingId = calendarSettingIdParam || '6'
     const chatbotId = chatbotIdParam || '19'
 
-    initByHandleChat({
+    initHandleChat({
       userId,
       calendarSettingId,
       chatbotId,

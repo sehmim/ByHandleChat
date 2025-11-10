@@ -1,7 +1,7 @@
 import { StrictMode, useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import { initByHandleChat } from './widget'
+import { initHandleChat } from './widget'
 
 const DevApp = () => {
   useEffect(() => {
@@ -16,7 +16,7 @@ const DevApp = () => {
     const calendarSettingId = calendarSettingIdParam || '6'
     const chatbotId = chatbotIdParam || '19'
 
-    initByHandleChat({
+    void initHandleChat({
       userId,
       calendarSettingId,
       chatbotId,
@@ -40,4 +40,3 @@ createRoot(document.getElementById('root')!).render(
     <DevApp />
   </StrictMode>,
 )
-
