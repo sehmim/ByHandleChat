@@ -30,13 +30,17 @@ Outputs `dist/widget.js` (IIFE + sourcemap) which is ready to upload to `https:/
   src="https://cdn.byhandle.ai/widget.js"
   data-client-id="abc123"
   data-config-url="https://api.byhandle.ai/client-config/abc123"  <!-- optional -->
+  data-logo-url="https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg"  <!-- optional -->
+  data-brand-name="Handle"  <!-- optional -->
 ></script>
 ```
 
 - `data-client-id` – **required**. Logged as a warning and the widget aborts if missing.
 - `data-config-url` – optional override (useful for staging or testing). If omitted, the widget fetches `https://api.byhandle.ai/client-config/{clientId}` automatically.
+- `data-logo-url` – optional. URL to your brand logo to display in the widget header.
+- `data-brand-name` – optional. Your brand name to display in the widget header.
 
-The script exposes `window.ByHandleChat.init({ clientId, configEndpoint? })` in case you need to initialize manually.
+The script exposes `window.ByHandleChat.init({ clientId, configEndpoint?, logoUrl?, brandName? })` in case you need to initialize manually.
 
 ## Analytics Events
 Listen for `window.addEventListener('byhandle-chat-event', handler)` to receive:

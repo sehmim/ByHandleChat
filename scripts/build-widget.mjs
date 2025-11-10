@@ -1,5 +1,5 @@
 import * as esbuild from 'esbuild'
-import { readFileSync } from 'fs'
+import { readFileSync, copyFileSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
 
@@ -27,6 +27,7 @@ const inlineCssPlugin = {
 
 async function buildWidget() {
   try {
+    // Build widget to dist folder
     await esbuild.build({
       entryPoints: [resolve(__dirname, '../src/widget.tsx')],
       bundle: true,
@@ -46,6 +47,19 @@ async function buildWidget() {
       },
     })
     console.log('✓ Widget build completed successfully')
+
+    // Copy to public folder for Next.js to serve
+    const publicDir = resolve(__dirname, '../public')
+    mkdirSync(publicDir, { recursive: true })
+    copyFileSync(
+      resolve(__dirname, '../dist/widget.js'),
+      resolve(publicDir, 'widget.js')
+    )
+    copyFileSync(
+      resolve(__dirname, '../dist/widget.js.map'),
+      resolve(publicDir, 'widget.js.map')
+    )
+    console.log('✓ Widget copied to public folder')
   } catch (error) {
     console.error('✗ Widget build failed:', error)
     process.exit(1)

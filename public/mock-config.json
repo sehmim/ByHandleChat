@@ -3,7 +3,7 @@
   "welcomeMessage": "Hey there! I'm the Handle assistant. Ask anything and we'll get back ASAP.",
   "primaryColor": "#2563eb",
   "brandName": "Handle",
-  "logoUrl": "https://dummyimage.com/96x96/2563eb/ffffff&text=H",
+  "logoUrl": "https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg",
   "userId": "YOUR_USER_ID",
   "calendarSettingId": "YOUR_CALENDAR_SETTING_ID",
   "chatbotId": "YOUR_CHATBOT_ID"
