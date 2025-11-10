@@ -3,11 +3,14 @@ import { useEffect, useState } from 'react'
 type ChatLauncherProps = {
   isOpen: boolean
   brandName?: string
+  logoUrl?: string
   onToggle: () => void
 }
 
-export const ChatLauncher = ({ isOpen, onToggle }: ChatLauncherProps) => {
+export const ChatLauncher = ({ isOpen, logoUrl, onToggle }: ChatLauncherProps) => {
   const [showTooltip, setShowTooltip] = useState(false)
+  // Default to the Handle logo
+  const defaultLogoUrl = logoUrl || 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg'
 
   useEffect(() => {
     // Show tooltip after 5 seconds
@@ -53,13 +56,10 @@ export const ChatLauncher = ({ isOpen, onToggle }: ChatLauncherProps) => {
         onClick={handleClick}
         aria-expanded={isOpen}
         aria-label={isOpen ? 'Close Handle chat' : 'Open Handle chat'}
-        className={`pointer-events-auto inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-normal text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
+        className={`p-1 pointer-events-auto inline-flex items-center gap-2 rounded-full bg-slate-900 text-sm font-normal text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
       >
-        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white/10">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" strokeWidth="2"/>
-            <path d="M16 2v4M8 2v4M3 10h18" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-          </svg>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden">
+          <img src={defaultLogoUrl} alt="Logo" className="h-full w-full object-cover" />
         </span>
         {isOpen ? '' : ``}
       </button>

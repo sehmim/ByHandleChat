@@ -272,7 +272,7 @@ export const WidgetApp = ({
           </MessageProvider>
       </section>
 
-      <ChatLauncher isOpen={isOpen} brandName={brandName} onToggle={togglePanel} />
+      <ChatLauncher isOpen={isOpen} brandName={brandName} logoUrl={logoUrl} onToggle={togglePanel} />
     </div>
   )
 }
