@@ -18,6 +18,18 @@ type ScrapedData = {
   }>
 }
 
+// CORS headers helper
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'https://handle.gadget.app',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders })
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -27,7 +39,7 @@ export async function GET(request: NextRequest) {
     if (!website) {
       return NextResponse.json(
         { error: 'Missing required query parameter: website' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -36,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (!openaiApiKey) {
       return NextResponse.json(
         { error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in environment variables.' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -47,7 +59,7 @@ export async function GET(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: 'Invalid website URL format' },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -66,7 +78,7 @@ export async function GET(request: NextRequest) {
           {
             error: `Failed to fetch website: ${response.status} ${response.statusText}`,
           },
-          { status: 400 }
+          { status: 400, headers: corsHeaders }
         )
       }
 
@@ -76,7 +88,7 @@ export async function GET(request: NextRequest) {
         {
           error: `Failed to fetch website: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
-        { status: 400 }
+        { status: 400, headers: corsHeaders }
       )
     }
 
@@ -137,7 +149,7 @@ Be concise and accurate. Extract only what's clearly stated on the website.`,
     if (!aiResponse) {
       return NextResponse.json(
         { error: 'Failed to get response from OpenAI' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -147,7 +159,7 @@ Be concise and accurate. Extract only what's clearly stated on the website.`,
     } catch {
       return NextResponse.json(
         { error: 'Failed to parse AI response' },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
@@ -159,7 +171,7 @@ Be concise and accurate. Extract only what's clearly stated on the website.`,
       scrapedAt: new Date().toISOString(),
       model: 'gpt-4o-mini',
       tokensUsed: completion.usage?.total_tokens || 0,
-    })
+    }, { headers: corsHeaders })
   } catch (error) {
     console.error('Scrape website error:', error)
 
@@ -171,13 +183,13 @@ Be concise and accurate. Extract only what's clearly stated on the website.`,
           message: error.message,
           status: error.status,
         },
-        { status: 500 }
+        { status: 500, headers: corsHeaders }
       )
     }
 
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     )
   }
 }
