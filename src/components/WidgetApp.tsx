@@ -355,17 +355,25 @@ export const WidgetApp = ({
     ...accentStyle,
     width: isExpanded ? (isMobileViewport ? '100vw' : 'min(40vw, 640px)') : `${baseWidth}px`,
     maxWidth: isExpanded ? (isMobileViewport ? '100vw' : 'calc(100vw - 32px)') : 'calc(100vw - 32px)',
+    paddingTop: isMobileViewport ? 'env(safe-area-inset-top)' : undefined,
+    paddingBottom: isMobileViewport ? 'env(safe-area-inset-bottom)' : undefined,
     zIndex: resolvedZIndex,
   }
 
   const panelStyle: CSSProperties = isExpanded
     ? isMobileViewport
-      ? { height: '100vh' }
+      ? { height: '100vh', paddingBottom: 'env(safe-area-inset-bottom)' }
       : { height: '70vh', maxHeight: 'calc(100vh - 40px)' }
     : { height: `${baseHeight}px`, maxHeight: 'calc(100vh - 40px)' }
 
+  const panelContentClasses = [
+    'flex flex-col gap-2 bg-slate-50/40 flex-1 overflow-y-auto',
+    isMobileViewport ? 'px-3 pb-0 pt-3' : 'px-2 pb-0 pt-3',
+  ].join(' ')
+
   const containerClasses = [
-    'pointer-events-none fixed flex flex-col gap-2 transition-all',
+    'pointer-events-none fixed flex flex-col transition-all',
+    isMobileViewport ? 'gap-0' : 'gap-2',
     isExpanded && isMobileViewport ? 'inset-0 items-stretch' : positionClasses.container,
   ].join(' ')
 
@@ -400,7 +408,7 @@ export const WidgetApp = ({
           onAutoStartBooking={startBookingFlow}
           bookingSummary={bookingSummary}
         >
-          <div className="flex flex-col gap-2 bg-slate-50/40 px-2 pb-0 flex-1 overflow-y-auto">
+          <div className={panelContentClasses}>
               <SuggestionCards
                 bookingActive={bookingActive}
                 inquiryActive={inquiryActive}
