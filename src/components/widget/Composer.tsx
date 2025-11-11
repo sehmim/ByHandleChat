@@ -43,7 +43,7 @@ export const Composer = () => {
         aria-label="Message"
         placeholder={isLoading ? "Waiting for response..." : "Write a message…"}
         disabled={isLoading}
-        className="min-h-[40px] max-h-32 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-[13px] leading-relaxed text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
+        className="min-h-[40px] max-h-32 flex-1 resize-none rounded-lg border border-slate-200 px-3 py-2 text-base leading-relaxed text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)] disabled:opacity-50 disabled:cursor-not-allowed"
       />
       <button
         type="submit"
