@@ -1,32 +1,9 @@
 import type { BookingDay, BookingService } from '../types'
+import { BUSINESS_CONTEXT } from '../../../business-context'
 
 const SLOT_INTERVAL_MINUTES = 30
 const SLOT_START_MINUTES = 9 * 60
 const SLOT_END_MINUTES = 17 * 60
-
-const mockServices: BookingService[] = [
-  {
-    id: 'consult',
-    name: 'Initial Consultation',
-    durationMinutes: 30,
-    priceCents: 7500,
-    description: 'A 30-minute call to understand your needs and outline next steps.',
-  },
-  {
-    id: 'deep-dive',
-    name: 'Deep Dive Session',
-    durationMinutes: 60,
-    priceCents: 14000,
-    description: 'A full hour dedicated to strategy, planning, and recommendations.',
-  },
-  {
-    id: 'vip',
-    name: 'Priority VIP Visit',
-    durationMinutes: 90,
-    priceCents: 26000,
-    description: 'Hands-on working session with guaranteed follow-up support.',
-  },
-]
 
 const formatSlotLabel = (minutes: number) => {
   const hours = Math.floor(minutes / 60)
@@ -67,7 +44,15 @@ export const mockFetchAvailability = () =>
 
 export const mockFetchServices = () =>
   new Promise<BookingService[]>((resolve) => {
-    setTimeout(() => resolve(mockServices.map((service) => ({ ...service }))), 500)
+    setTimeout(() => resolve(
+      BUSINESS_CONTEXT.services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        durationMinutes: service.durationMinutes,
+        priceCents: service.priceCents,
+        description: service.description,
+      })),
+    ), 500)
   })
 
 export const mockSubmitBooking = () =>

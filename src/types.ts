@@ -1,3 +1,10 @@
+import type {
+  BookingForm,
+  BookingPayment,
+  BookingSelection,
+  BookingService,
+} from './components/widget/types'
+
 export type ClientConfig = {
   clientId: string
   welcomeMessage: string
@@ -9,6 +16,14 @@ export type ClientConfig = {
   chatbotId?: string
 }
 
+export type BookingSummary = {
+  id: string
+  service: BookingService
+  selection: BookingSelection
+  form: BookingForm
+  payment: BookingPayment
+}
+
 export type Message = {
   id: string
   sender: 'user' | 'bot'
@@ -16,10 +31,11 @@ export type Message = {
   timestamp: string
   showBookingButton?: boolean
   autoStartBooking?: boolean
+  showInquiryButton?: boolean
+  summary?: BookingSummary
 }
 
 export type AnalyticsEvent =
   | { type: 'chat_opened'; clientId: string }
   | { type: 'chat_closed'; clientId: string }
   | { type: 'message_sent'; clientId: string; content: string }
-

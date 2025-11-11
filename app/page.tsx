@@ -29,8 +29,6 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="dev-shell">
-      <h1>Handle Revenue OS</h1>
-    </main>
+    <main></main>
   )
 }

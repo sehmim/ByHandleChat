@@ -1,9 +1,11 @@
-import { useState, type FormEvent, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { useMessages } from '../../state/MessageProvider'
 
 export const Composer = () => {
   const { sendMessage, isLoading } = useMessages()
   const [value, setValue] = useState('')
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null)
+  const prevIsLoading = useRef(false)
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -23,9 +25,17 @@ export const Composer = () => {
     }
   }
 
+  useEffect(() => {
+    if (!isLoading && prevIsLoading.current) {
+      textareaRef.current?.focus()
+    }
+    prevIsLoading.current = isLoading
+  }, [isLoading])
+
   return (
     <form onSubmit={handleSubmit} className="flex gap-2">
       <textarea
+        ref={textareaRef}
         value={value}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={handleKeyDown}

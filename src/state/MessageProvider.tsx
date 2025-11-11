@@ -4,10 +4,11 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
-import type { AnalyticsEvent, Message } from '../types'
+import type { AnalyticsEvent, BookingSummary, Message } from '../types'
 
 type MessageContextValue = {
   messages: Message[]
@@ -24,7 +25,7 @@ type MessageProviderProps = {
   welcomeMessage?: string
   emitEvent?: (event: AnalyticsEvent) => void
   onAutoStartBooking?: () => void
-  onAutoStartInquiry?: () => void
+  bookingSummary?: BookingSummary | null
   children: ReactNode
 }
 
@@ -57,7 +58,7 @@ export const MessageProvider = ({
   welcomeMessage,
   emitEvent,
   onAutoStartBooking,
-  onAutoStartInquiry,
+  bookingSummary,
 }: MessageProviderProps) => {
   const [messages, setMessages] = useState<Message[]>(() =>
     welcomeMessage ? [createBotMessage(welcomeMessage)] : [],
@@ -65,11 +66,29 @@ export const MessageProvider = ({
   const [hasInteracted, setHasInteracted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const summaryIdRef = useRef<string | null>(null)
 
   useEffect(() => {
     setMessages(welcomeMessage ? [createBotMessage(welcomeMessage)] : [])
     setHasInteracted(false)
   }, [welcomeMessage])
+
+  useEffect(() => {
+    if (!bookingSummary) {
+      summaryIdRef.current = null
+      return
+    }
+
+    if (summaryIdRef.current === bookingSummary.id) return
+
+    const summaryMessage = {
+      ...createBotMessage('Appointment confirmed! Here\'s a quick summary:'),
+      summary: bookingSummary,
+    }
+
+    setMessages((prev) => [...prev, summaryMessage])
+    summaryIdRef.current = bookingSummary.id
+  }, [bookingSummary])
 
   const sendMessage = useCallback(
     async (content: string) => {
@@ -132,15 +151,13 @@ export const MessageProvider = ({
         let messageContent = data.message.content
         let showBookingButton = false
         let autoStartBooking = false
+        let showInquiryButton = false
 
         // Check for inquiry flow trigger (highest priority - for human handoff and security)
         if (messageContent.includes('[AUTO_START_INQUIRY]')) {
           // Remove the marker from the displayed content
           messageContent = messageContent.replace(/\[AUTO_START_INQUIRY\]/g, '').trim()
-          // Trigger inquiry flow after a short delay
-          setTimeout(() => {
-            onAutoStartInquiry?.()
-          }, 500)
+          showInquiryButton = true
         } else if (messageContent.includes('[AUTO_START_BOOKING]')) {
           // Check for auto-start booking
           autoStartBooking = true
@@ -160,7 +177,8 @@ export const MessageProvider = ({
         const botMessage = {
           ...createBotMessage(messageContent),
           showBookingButton,
-          autoStartBooking
+          autoStartBooking,
+          showInquiryButton,
         }
         setMessages((prev) => [...prev, botMessage])
       } catch (err) {
@@ -177,7 +195,7 @@ export const MessageProvider = ({
         setIsLoading(false)
       }
     },
-    [clientId, userId, chatbotId, messages, welcomeMessage, isLoading, emitEvent, onAutoStartBooking, onAutoStartInquiry],
+    [clientId, userId, chatbotId, messages, welcomeMessage, isLoading, emitEvent, onAutoStartBooking],
   )
 
   const value = useMemo(

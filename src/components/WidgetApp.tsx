@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { MessageProvider } from '../state/MessageProvider'
 import type { AnalyticsEvent, ClientConfig } from '../types'
 import { ChatLauncher } from './widget/ChatLauncher'
@@ -35,6 +35,7 @@ type WidgetAppProps = {
   primaryColor?: string
   welcomeMessage?: string
   logoUrl?: string
+  phoneNumber?: string
   panelWidth?: number
   panelHeight?: number
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
@@ -55,6 +56,7 @@ export const WidgetApp = ({
   primaryColor = DEFAULT_PRIMARY,
   welcomeMessage = FALLBACK_WELCOME,
   logoUrl,
+  phoneNumber,
   panelWidth,
   panelHeight,
   position = 'bottom-right',
@@ -84,6 +86,19 @@ export const WidgetApp = ({
     calendarSettingId,
     chatbotId,
   }
+
+  const bookingSummary = useMemo(() => {
+    if (bookingState.status !== 'success') return undefined
+    const { service, selection, form, payment } = bookingState
+    const summaryId = `${service.id}-${selection.date}-${selection.slot}-${payment.last4}-${payment.amountCents}`
+    return {
+      id: summaryId,
+      service,
+      selection,
+      form,
+      payment,
+    }
+  }, [bookingState])
 
   useEffect(() => {
     setLogoFailed(false)
@@ -383,7 +398,7 @@ export const WidgetApp = ({
           welcomeMessage={welcomeMessage}
           emitEvent={emitEvent}
           onAutoStartBooking={startBookingFlow}
-          onAutoStartInquiry={startInquiryFlow}
+          bookingSummary={bookingSummary}
         >
           <div className="flex flex-col gap-2 bg-slate-50/40 px-2 pb-0 flex-1 overflow-y-auto">
               <SuggestionCards
@@ -464,7 +479,13 @@ export const WidgetApp = ({
                   onClose={closeInquiry}
                 />
               )}
-              {!bookingActive && !inquiryActive && <ChatTranscript onStartBooking={startBookingFlow} />}
+              {!bookingActive && !inquiryActive && (
+                <ChatTranscript
+                  onStartBooking={startBookingFlow}
+                  onStartInquiry={startInquiryFlow}
+                  phoneNumber={phoneNumber}
+                />
+              )}
             </div>
             {!bookingActive && !inquiryActive && (
               <div className="border-t border-slate-200/60 bg-white px-4 py-3">

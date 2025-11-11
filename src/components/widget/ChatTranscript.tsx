@@ -1,11 +1,38 @@
 import { useEffect, useRef } from 'react'
+import { formatCurrency, formatDateLong } from './booking/helpers'
+import type { BookingSummary } from '../../types'
 import { useMessages } from '../../state/MessageProvider'
 
 type ChatTranscriptProps = {
   onStartBooking?: () => void
+  onStartInquiry?: () => void
+  phoneNumber?: string
 }
 
-export const ChatTranscript = ({ onStartBooking }: ChatTranscriptProps) => {
+const SummaryCard = ({ summary }: { summary: BookingSummary }) => (
+  <div className="mt-2 w-full max-w-[85%] rounded-lg border border-slate-200/60 bg-slate-50 p-3 text-left text-sm text-slate-700">
+    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">
+      Appointment summary
+    </p>
+    <p className="mt-1 text-base font-semibold text-slate-900">
+      {summary.service.name} · {summary.service.durationMinutes} min
+    </p>
+    <p className="text-xs text-slate-500">
+      {formatDateLong(summary.selection.date)} · {summary.selection.slot}
+    </p>
+    <p className="mt-1 text-sm font-semibold text-slate-900">
+      {formatCurrency(summary.payment.amountCents)}
+    </p>
+    <p className="text-xs text-slate-500">
+      Receipt sent to <strong>{summary.form.email}</strong>
+    </p>
+    <p className="text-[11px] text-slate-500">
+      Charged to {summary.payment.brand} ending in {summary.payment.last4}
+    </p>
+  </div>
+)
+
+export const ChatTranscript = ({ onStartBooking, onStartInquiry, phoneNumber }: ChatTranscriptProps) => {
   const { messages } = useMessages()
   const listRef = useRef<HTMLUListElement>(null)
 
@@ -58,6 +85,35 @@ export const ChatTranscript = ({ onStartBooking }: ChatTranscriptProps) => {
                   Book Appointment
                 </button>
               )}
+              {!isUser && message.showInquiryButton && onStartInquiry && (
+                <button
+                  type="button"
+                  onClick={onStartInquiry}
+                  className="mt-2 flex items-center gap-2 rounded-lg border border-slate-200/60 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M4 6h16v12H4V6zm0-2a2 2 0 00-2 2v12a2 2 0 002 2h16a2 2 0 002-2V6a2 2 0 00-2-2H4z"
+                      stroke="currentColor"
+                      strokeWidth="1.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                    <path d="M4 8l8 5 8-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  </svg>
+                  <span className="flex flex-col items-start">
+                    <span>
+                      Leave a message
+                      {phoneNumber && (
+                        <span className="ml-1 text-[11px] font-normal text-slate-500">
+                          · {phoneNumber}
+                        </span>
+                      )}
+                    </span>
+                  </span>
+                </button>
+              )}
+              {!isUser && message.summary && <SummaryCard summary={message.summary} />}
             </li>
           )
         })}
