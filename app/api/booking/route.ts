@@ -14,7 +14,33 @@ type BookingRequest = {
   notes?: string
 }
 
+// CORS headers helper
+const allowedOrigins = [
+  'https://handle.gadget.app',
+  'https://handle--development.gadget.app'
+]
+
+const corsHeaders = (origin?: string) => {
+  const allowedOrigin = origin && allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: corsHeaders(origin || undefined) })
+}
+
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const headers = corsHeaders(origin || undefined)
   try {
     const body: BookingRequest = await request.json()
     const { userId, calendarSettingId, chatbotId, name, email, date, time } = body
@@ -23,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!userId || !calendarSettingId || !chatbotId || !name || !email || !date || !time) {
       return NextResponse.json(
         { error: 'Missing required fields' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -32,7 +58,7 @@ export async function POST(request: NextRequest) {
     if (!emailRegex.test(email)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -63,18 +89,20 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
       },
       message: 'Booking created successfully',
-    })
+    }, { headers })
   } catch (error) {
     console.error('Booking API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }
 
 // GET endpoint to retrieve booking details
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const headers = corsHeaders(origin || undefined)
   try {
     const { searchParams } = new URL(request.url)
     const bookingId = searchParams.get('bookingId')
@@ -82,7 +110,7 @@ export async function GET(request: NextRequest) {
     if (!bookingId) {
       return NextResponse.json(
         { error: 'Missing bookingId parameter' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -94,12 +122,12 @@ export async function GET(request: NextRequest) {
         status: 'confirmed',
         // Add other booking details here
       },
-    })
+    }, { headers })
   } catch (error) {
     console.error('Booking retrieval error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }

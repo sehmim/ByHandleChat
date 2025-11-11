@@ -13,7 +13,33 @@ type ChatRequest = {
   chatbotId: string
 }
 
+// CORS headers helper
+const allowedOrigins = [
+  'https://handle.gadget.app',
+  'https://handle--development.gadget.app'
+]
+
+const corsHeaders = (origin?: string) => {
+  const allowedOrigin = origin && allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: corsHeaders(origin || undefined) })
+}
+
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const headers = corsHeaders(origin || undefined)
   try {
     const body: ChatRequest = await request.json()
     const { messages, userId, chatbotId } = body
@@ -22,7 +48,7 @@ export async function POST(request: NextRequest) {
     if (!messages || !userId || !chatbotId) {
       return NextResponse.json(
         { error: 'Missing required fields: messages, userId, or chatbotId' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -31,7 +57,7 @@ export async function POST(request: NextRequest) {
     if (!lastMessage || lastMessage.role !== 'user') {
       return NextResponse.json(
         { error: 'Last message must be from user' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -46,12 +72,12 @@ export async function POST(request: NextRequest) {
       message: responseMessage,
       userId,
       chatbotId,
-    })
+    }, { headers })
   } catch (error) {
     console.error('Chat API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }

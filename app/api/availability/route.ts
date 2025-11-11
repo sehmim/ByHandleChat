@@ -9,7 +9,33 @@ type AvailabilityRequest = {
   endDate?: string
 }
 
+// CORS headers helper
+const allowedOrigins = [
+  'https://handle.gadget.app',
+  'https://handle--development.gadget.app'
+]
+
+const corsHeaders = (origin?: string) => {
+  const allowedOrigin = origin && allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: corsHeaders(origin || undefined) })
+}
+
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const headers = corsHeaders(origin || undefined)
   try {
     const body: AvailabilityRequest = await request.json()
     const { userId, calendarSettingId, startDate, endDate } = body
@@ -18,7 +44,7 @@ export async function POST(request: NextRequest) {
     if (!userId || !calendarSettingId) {
       return NextResponse.json(
         { error: 'Missing required fields: userId or calendarSettingId' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -53,12 +79,12 @@ export async function POST(request: NextRequest) {
       calendarSettingId,
       startDate: startDate || new Date().toISOString().split('T')[0],
       endDate: endDate || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-    })
+    }, { headers })
   } catch (error) {
     console.error('Availability API error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }

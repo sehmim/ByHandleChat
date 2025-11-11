@@ -8,7 +8,33 @@ type VerifyScriptRequest = {
   scriptTag: string
 }
 
+// CORS headers helper
+const allowedOrigins = [
+  'https://handle.gadget.app',
+  'https://handle--development.gadget.app'
+]
+
+const corsHeaders = (origin?: string) => {
+  const allowedOrigin = origin && allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+}
+
+// Handle OPTIONS request for CORS preflight
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: corsHeaders(origin || undefined) })
+}
+
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const headers = corsHeaders(origin || undefined)
   try {
     const body: VerifyScriptRequest = await request.json()
     const { website, scriptTag } = body
@@ -17,7 +43,7 @@ export async function POST(request: NextRequest) {
     if (!website || !scriptTag) {
       return NextResponse.json(
         { error: 'Missing required fields: website or scriptTag' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -28,7 +54,7 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: 'Invalid website URL format' },
-        { status: 400 }
+        { status: 400, headers }
       )
     }
 
@@ -48,7 +74,7 @@ export async function POST(request: NextRequest) {
             error: `Failed to fetch website: ${response.status} ${response.statusText}`,
             found: false,
           },
-          { status: 200 }
+          { status: 200, headers }
         )
       }
 
@@ -59,7 +85,7 @@ export async function POST(request: NextRequest) {
           error: `Failed to fetch website: ${error instanceof Error ? error.message : 'Unknown error'}`,
           found: false,
         },
-        { status: 200 }
+        { status: 200, headers }
       )
     }
 
@@ -89,12 +115,12 @@ export async function POST(request: NextRequest) {
       scriptTag,
       matchedScript: found ? matchedScript : undefined,
       checkedAt: new Date().toISOString(),
-    })
+    }, { headers })
   } catch (error) {
     console.error('Verify script error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
-      { status: 500 }
+      { status: 500, headers }
     )
   }
 }

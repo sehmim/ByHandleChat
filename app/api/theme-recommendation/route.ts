@@ -38,10 +38,22 @@ const RGB_COLOR_REGEX = /rgba?\s*\(\s*[\d.\s%,]+\)/gi
 const GRADIENT_REGEX = /linear-gradient\([^)]*\)/gi
 const FONT_FAMILY_REGEX = /font-family\s*:\s*([^;!}]+)/gi
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://handle.gadget.app',
-  'Access-Control-Allow-Methods': 'GET, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+// CORS headers helper
+const allowedOrigins = [
+  'https://handle.gadget.app',
+  'https://handle--development.gadget.app'
+]
+
+const corsHeaders = (origin?: string) => {
+  const allowedOrigin = origin && allowedOrigins.includes(origin)
+    ? origin
+    : allowedOrigins[0]
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
 }
 
 const expandShortHex = (hex: string) => {
@@ -193,11 +205,15 @@ const buildThemeInsights = (cssBlobs: string[], metaThemeColor?: string): ThemeI
 
 const truncate = (value: string, max = 4000) => value.slice(0, max)
 
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders })
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  return NextResponse.json({}, { headers: corsHeaders(origin || undefined) })
 }
 
 export async function GET(request: NextRequest) {
+  const origin = request.headers.get('origin')
+  const headers = corsHeaders(origin || undefined)
+
   try {
     const { searchParams } = new URL(request.url)
     const website = searchParams.get('website')
@@ -205,7 +221,7 @@ export async function GET(request: NextRequest) {
     if (!website) {
       return NextResponse.json(
         { error: 'Missing required query parameter: website' },
-        { status: 400, headers: corsHeaders },
+        { status: 400, headers },
       )
     }
 
@@ -213,7 +229,7 @@ export async function GET(request: NextRequest) {
     if (!openaiApiKey) {
       return NextResponse.json(
         { error: 'OpenAI API key not configured. Please set OPENAI_API_KEY in environment variables.' },
-        { status: 500, headers: corsHeaders },
+        { status: 500, headers },
       )
     }
 
@@ -223,7 +239,7 @@ export async function GET(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: 'Invalid website URL format' },
-        { status: 400, headers: corsHeaders },
+        { status: 400, headers },
       )
     }
 
@@ -239,7 +255,7 @@ export async function GET(request: NextRequest) {
       if (!response.ok) {
         return NextResponse.json(
           { error: `Failed to fetch website: ${response.status} ${response.statusText}` },
-          { status: 400, headers: corsHeaders },
+          { status: 400, headers },
         )
       }
 
@@ -249,7 +265,7 @@ export async function GET(request: NextRequest) {
         {
           error: `Failed to fetch website: ${error instanceof Error ? error.message : 'Unknown error'}`,
         },
-        { status: 400, headers: corsHeaders },
+        { status: 400, headers },
       )
     }
 
@@ -310,7 +326,7 @@ export async function GET(request: NextRequest) {
     if (!aiResponse) {
       return NextResponse.json(
         { error: 'Failed to get response from OpenAI' },
-        { status: 500, headers: corsHeaders },
+        { status: 500, headers },
       )
     }
 
@@ -320,7 +336,7 @@ export async function GET(request: NextRequest) {
     } catch {
       return NextResponse.json(
         { error: 'Failed to parse theme recommendation response' },
-        { status: 500, headers: corsHeaders },
+        { status: 500, headers },
       )
     }
 
@@ -334,7 +350,7 @@ export async function GET(request: NextRequest) {
         model: 'gpt-4o-mini',
         tokensUsed: completion.usage?.total_tokens ?? 0,
       },
-      { headers: corsHeaders },
+      { headers },
     )
   } catch (error) {
     console.error('Theme recommendation error:', error)
@@ -346,10 +362,10 @@ export async function GET(request: NextRequest) {
           message: error.message,
           status: error.status,
         },
-        { status: 500, headers: corsHeaders },
+        { status: 500, headers },
       )
     }
 
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers: corsHeaders })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500, headers })
   }
 }
