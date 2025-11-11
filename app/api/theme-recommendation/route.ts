@@ -177,7 +177,7 @@ const buildThemeInsights = (cssBlobs: string[], metaThemeColor?: string): ThemeI
   const primaryColor = primaryCandidate || fallbackPrimary || '#2563EB'
   const accentColor = accentCandidate || primaryColor
 
-  let backgroundColor = backgroundCandidate
+  let backgroundColor: string | undefined = backgroundCandidate
   if (backgroundColor) {
     const lum = luminance(backgroundColor)
     if (lum !== null && lum < 0.4) {
