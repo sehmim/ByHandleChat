@@ -44,8 +44,8 @@ export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => 
 
   return (
     <div className="rounded-lg border border-slate-200/30 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-200/30 px-4 py-3">
-        <h3 className="text-sm font-normal text-slate-800">Send us a question</h3>
+      <div className="flex items-center justify-between border-b border-slate-200/30 px-2 py-2">
+        <h3 className="text-sm font-normal text-slate-800">Leave a message</h3>
         <button
           type="button"
           onClick={onClose}
@@ -110,7 +110,7 @@ export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => 
           {errors.question && <p className="mt-1 text-xs text-red-500">{errors.question}</p>}
         </div>
 
-        <div className="flex gap-2 pt-2">
+        <div className="flex gap-2">
           <button
             type="button"
             onClick={onClose}

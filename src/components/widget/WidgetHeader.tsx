@@ -69,7 +69,7 @@ export const WidgetHeader = ({
               </>
             )}
           </svg>
-          <span>{isExpanded ? 'Shrink' : 'Expand'}</span>
+          <span>{isExpanded ? '' : ''}</span>
         </button>
         <button
           type="button"

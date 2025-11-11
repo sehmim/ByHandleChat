@@ -56,7 +56,7 @@ const mockFetchWidgetConfig = (userId: string): Promise<WidgetUiConfig> =>
         primaryColor: '#0f172a',
         logoUrl: 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg',
         panelWidth: 400,
-        panelHeight: 580,
+        panelHeight: 460,
         position: userId === 'left' ? 'bottom-left' : 'bottom-right',
         zIndex: 2147483600,
         launcherMessage: 'Need help booking? Tap to chat.',

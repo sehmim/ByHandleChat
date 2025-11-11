@@ -38,7 +38,8 @@ const suggestions = [
 export const SuggestionCards = ({ bookingActive, inquiryActive, onStartBooking, onStartInquiry }: SuggestionCardsProps) => {
   const { hasInteracted } = useMessages()
 
-  if (hasInteracted || bookingActive || inquiryActive) return null
+  // Hide completely if booking or inquiry flows are active
+  if (bookingActive || inquiryActive) return null
 
   const handleClick = (id: string) => {
     if (id === 'appointment') {
@@ -48,6 +49,29 @@ export const SuggestionCards = ({ bookingActive, inquiryActive, onStartBooking, 
     }
   }
 
+  // Minimized view when user has interacted
+  if (hasInteracted) {
+    return (
+      <div aria-label="Quick actions" className="flex gap-2">
+        {suggestions.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => handleClick(item.id)}
+            title={item.title}
+            className="flex items-center gap-1.5 rounded-lg border border-slate-200/40 bg-white px-2.5 py-1.5 text-xs font-normal text-slate-600 transition hover:border-accent/50 hover:bg-slate-50/50 hover:text-accent w-full"
+          >
+            <span className="flex h-5 w-5 flex-shrink-0 items-center justify-center text-accent">
+              {item.icon}
+            </span>
+            <span className="whitespace-nowrap">{item.title}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  // Full view when user hasn't interacted yet
   return (
     <div aria-label="Suggested prompts" className="flex flex-wrap gap-2">
       {suggestions.map((item) => (

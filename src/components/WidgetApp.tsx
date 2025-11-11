@@ -376,16 +376,22 @@ export const WidgetApp = ({
           onClose={closePanel}
         />
 
-        <MessageProvider clientId={clientId || userId} welcomeMessage={welcomeMessage} emitEvent={emitEvent}>
-          <div className="flex flex-col gap-2 bg-slate-50/40 px-4 py-3 flex-1 overflow-y-auto">
-              {!bookingActive && !inquiryActive && (
-                <SuggestionCards
-                  bookingActive={bookingActive}
-                  inquiryActive={inquiryActive}
-                  onStartBooking={startBookingFlow}
-                  onStartInquiry={startInquiryFlow}
-                />
-              )}
+        <MessageProvider
+          clientId={clientId || userId}
+          userId={userId}
+          chatbotId={chatbotId}
+          welcomeMessage={welcomeMessage}
+          emitEvent={emitEvent}
+          onAutoStartBooking={startBookingFlow}
+          onAutoStartInquiry={startInquiryFlow}
+        >
+          <div className="flex flex-col gap-2 bg-slate-50/40 px-2 pb-0 flex-1 overflow-y-auto">
+              <SuggestionCards
+                bookingActive={bookingActive}
+                inquiryActive={inquiryActive}
+                onStartBooking={startBookingFlow}
+                onStartInquiry={startInquiryFlow}
+              />
               {showServiceSelection && (
                 <BookingServiceSelection
                   state={bookingState as Extract<
@@ -458,7 +464,7 @@ export const WidgetApp = ({
                   onClose={closeInquiry}
                 />
               )}
-              {!bookingActive && !inquiryActive && <ChatTranscript />}
+              {!bookingActive && !inquiryActive && <ChatTranscript onStartBooking={startBookingFlow} />}
             </div>
             {!bookingActive && !inquiryActive && (
               <div className="border-t border-slate-200/60 bg-white px-4 py-3">

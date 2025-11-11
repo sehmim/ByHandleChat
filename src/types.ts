@@ -14,6 +14,8 @@ export type Message = {
   sender: 'user' | 'bot'
   content: string
   timestamp: string
+  showBookingButton?: boolean
+  autoStartBooking?: boolean
 }
 
 export type AnalyticsEvent =
