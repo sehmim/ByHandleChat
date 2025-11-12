@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { MessageProvider } from '../state/MessageProvider'
 import type { AnalyticsEvent, ClientConfig } from '../types'
+import { ASSISTANT_NAME, ASSISTANT_ROLE, ASSISTANT_TAGLINE, DEFAULT_ASSISTANT_AVATAR } from '../constants/assistant'
 import { ChatLauncher } from './widget/ChatLauncher'
 import { ChatTranscript } from './widget/ChatTranscript'
 import { Composer } from './widget/Composer'
@@ -52,7 +53,7 @@ export const WidgetApp = ({
   calendarSettingId,
   chatbotId,
   clientId,
-  brandName = 'Handle',
+  brandName = 'Handle Salon & Spa',
   primaryColor = DEFAULT_PRIMARY,
   welcomeMessage = FALLBACK_WELCOME,
   logoUrl,
@@ -67,21 +68,24 @@ export const WidgetApp = ({
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
   const [isMobileViewport, setIsMobileViewport] = useState(false)
-  const [logoFailed, setLogoFailed] = useState(false)
+  const [avatarFailed, setAvatarFailed] = useState(false)
   const [bookingState, setBookingState] = useState<BookingState>({ status: 'idle' })
   const [inquiryState, setInquiryState] = useState<InquiryState>({ status: 'idle' })
   const bookingRequestRef = useRef(0)
   const bookingSubmissionRef = useRef(0)
   const inquirySubmissionRef = useRef(0)
 
-  const resolvedBrandName = brandName || 'Handle'
+  const resolvedBusinessName = brandName || 'Handle Salon & Spa'
+  const assistantAvatarUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
+  const assistantHeadline = `${ASSISTANT_NAME} — your ${ASSISTANT_ROLE}`
+  const assistantSubtitle = `${resolvedBusinessName} · ${ASSISTANT_TAGLINE}`
 
   const config: ClientConfig = {
     clientId: clientId || userId, // Use userId as fallback for clientId
     welcomeMessage,
     primaryColor,
-    brandName: resolvedBrandName,
-    logoUrl,
+    brandName: resolvedBusinessName,
+    logoUrl: assistantAvatarUrl,
     userId,
     calendarSettingId,
     chatbotId,
@@ -101,7 +105,7 @@ export const WidgetApp = ({
   }, [bookingState])
 
   useEffect(() => {
-    setLogoFailed(false)
+    setAvatarFailed(false)
   }, [logoUrl])
 
   useEffect(() => {
@@ -390,10 +394,11 @@ export const WidgetApp = ({
     <div className={containerClasses} style={containerStyle}>
       <section className={panelClasses} style={panelStyle}>
         <WidgetHeader
-          brandName={resolvedBrandName}
-          logoUrl={logoUrl}
-          logoFailed={logoFailed}
-          onLogoError={() => setLogoFailed(true)}
+          brandName={assistantHeadline}
+          availabilityText={assistantSubtitle}
+          logoUrl={assistantAvatarUrl}
+          logoFailed={avatarFailed}
+          onLogoError={() => setAvatarFailed(true)}
           isExpanded={isExpanded}
           onToggleExpand={handleToggleExpand}
           onClose={closePanel}
@@ -503,7 +508,7 @@ export const WidgetApp = ({
           </MessageProvider>
       </section>
 
-      <ChatLauncher isOpen={isOpen} logoUrl={logoUrl} tooltipMessage={launcherMessage} onToggle={togglePanel} />
+      <ChatLauncher isOpen={isOpen} logoUrl={assistantAvatarUrl} tooltipMessage={launcherMessage} onToggle={togglePanel} />
     </div>
   )
 }

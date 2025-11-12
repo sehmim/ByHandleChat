@@ -3,6 +3,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import { WidgetApp } from './components/WidgetApp'
 import './widget.css'
 import type { AnalyticsEvent } from './types'
+import { ASSISTANT_NAME, ASSISTANT_ROLE, DEFAULT_ASSISTANT_AVATAR } from './constants/assistant'
 
 type ChatbotPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 
@@ -50,16 +51,15 @@ const mockFetchWidgetConfig = (userId: string): Promise<WidgetUiConfig> =>
   new Promise((resolve) => {
     setTimeout(() => {
       resolve({
-        title: 'Handle Concierge',
-        welcomeMessage:
-          "Hi! I'm the Handle concierge. Share what you’re looking for and I’ll get everything scheduled.",
+        title: `${ASSISTANT_NAME} — your ${ASSISTANT_ROLE}`,
+        welcomeMessage: `Hi! I'm ${ASSISTANT_NAME}, your ${ASSISTANT_ROLE}. What can I help you with today?`,
         primaryColor: '#0f172a',
-        logoUrl: 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg',
+        logoUrl: DEFAULT_ASSISTANT_AVATAR,
         panelWidth: 400,
         panelHeight: 460,
         position: userId === 'left' ? 'bottom-left' : 'bottom-right',
         zIndex: 2147483600,
-        launcherMessage: 'Need help booking? Tap to chat.',
+        launcherMessage: `Looking for the right service? I'm ${ASSISTANT_NAME} — happy to guide you.`,
       })
     }, 500)
   })

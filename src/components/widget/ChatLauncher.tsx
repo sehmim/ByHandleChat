@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { ASSISTANT_NAME, DEFAULT_ASSISTANT_AVATAR } from '../../constants/assistant'
 
 type ChatLauncherProps = {
   isOpen: boolean
@@ -7,12 +8,12 @@ type ChatLauncherProps = {
   onToggle: () => void
 }
 
-const DEFAULT_TOOLTIP = '👋🏽 Hey! Let me help you'
+const DEFAULT_TOOLTIP = `Looking for the right service? I'm ${ASSISTANT_NAME} — happy to guide you.`
 
 export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP, onToggle }: ChatLauncherProps) => {
   const [showTooltip, setShowTooltip] = useState(false)
-  // Default to the Handle logo
-  const defaultLogoUrl = logoUrl || 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg'
+  // Default to Maya's photo
+  const defaultLogoUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
 
   useEffect(() => {
     // Show tooltip after 5 seconds
@@ -55,11 +56,11 @@ export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP
         type="button"
         onClick={handleClick}
         aria-expanded={isOpen}
-        aria-label={isOpen ? 'Close Handle chat' : 'Open Handle chat'}
+        aria-label={isOpen ? `Close chat with ${ASSISTANT_NAME}` : `Open chat with ${ASSISTANT_NAME}`}
         className={`p-1 pointer-events-auto inline-flex items-center gap-2 rounded-full bg-slate-900 text-sm font-normal text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden">
-          <img src={defaultLogoUrl} alt="Logo" className="h-full w-full object-cover" />
+          <img src={defaultLogoUrl} alt={`${ASSISTANT_NAME} profile photo`} className="h-full w-full object-cover" />
         </span>
         {isOpen ? '' : ``}
       </button>

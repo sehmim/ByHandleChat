@@ -1,3 +1,5 @@
+import { DEFAULT_ASSISTANT_AVATAR } from '../../constants/assistant'
+
 type WidgetHeaderProps = {
   brandName: string
   availabilityText?: string
@@ -20,14 +22,14 @@ export const WidgetHeader = ({
   onClose,
 }: WidgetHeaderProps) => {
   // Default to the logo URL, fallback to brand initial only if logo fails
-  const defaultLogoUrl = logoUrl || 'https://kleknnxdnspllqliaong.supabase.co/storage/v1/object/public/handle/logo.jpeg'
+  const defaultLogoUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
   const fallbackInitial = brandName ? brandName.charAt(0).toUpperCase() : 'H'
 
   return (
     <header className="flex items-center gap-3 border-b border-slate-200/60 p-1">
       <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg bg-slate-100 text-sm font-medium text-slate-900">
         {!logoFailed ? (
-          <img src={defaultLogoUrl} alt={`${brandName} logo`} className="h-full w-full object-cover" onError={onLogoError} />
+          <img src={defaultLogoUrl} alt={`${brandName} profile photo`} className="h-full w-full object-cover" onError={onLogoError} />
         ) : (
           <span>{fallbackInitial}</span>
         )}

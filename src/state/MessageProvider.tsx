@@ -105,9 +105,7 @@ export const MessageProvider = ({
 
       try {
         // Build conversation history for API
-        const conversationHistory = messages
-          .filter((msg) => msg.sender !== 'bot' || msg.content !== welcomeMessage)
-          .map((msg) => ({
+        const conversationHistory = messages.map((msg) => ({
             role: msg.sender === 'user' ? ('user' as const) : ('assistant' as const),
             content: msg.content,
           }))
