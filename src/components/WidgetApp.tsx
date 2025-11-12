@@ -75,6 +75,7 @@ export const WidgetApp = ({
   const bookingSubmissionRef = useRef(0)
   const inquirySubmissionRef = useRef(0)
   const prefillDateRef = useRef<string | undefined>(undefined)
+  const composerRef = useRef<HTMLTextAreaElement>(null)
 
   const resolvedBusinessName = brandName || 'Handle Salon & Spa'
   const assistantAvatarUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
@@ -121,6 +122,23 @@ export const WidgetApp = ({
     mediaQuery.addListener(handleChange)
     return () => mediaQuery.removeListener(handleChange)
   }, [])
+
+  const bookingActive = useMemo(() => bookingState.status !== 'idle', [bookingState.status]);
+  const inquiryActive = useMemo(() => inquiryState.status !== 'idle', [inquiryState.status]);
+
+  useEffect(() => {
+    if (isOpen && isMobileViewport) {
+      // When the widget is opened in mobile, expand it automatically
+      setIsExpanded(true)
+    }
+  }, [isOpen, isMobileViewport])
+
+  useEffect(() => {
+    if (isOpen && !bookingActive && !inquiryActive) {
+      // Focus composer when chat opens
+      setTimeout(() => composerRef.current?.focus(), 100)
+    }
+  }, [isOpen, bookingActive, inquiryActive])
 
   const loadServices = useCallback((serviceId?: string) => {
     bookingRequestRef.current += 1
@@ -343,11 +361,14 @@ export const WidgetApp = ({
   }, [updatePanelState])
 
   const handleToggleExpand = useCallback(() => {
+    if (isMobileViewport) {
+      // On mobile, "expanding" is the default state, so this button should close the panel
+      closePanel()
+      return
+    }
     setIsExpanded((prev) => !prev)
-  }, [])
+  }, [isMobileViewport, closePanel])
 
-  const bookingActive = bookingState.status !== 'idle'
-  const inquiryActive = inquiryState.status !== 'idle'
   const showServiceSelection = ['services-loading', 'services-error', 'services-ready'].includes(bookingState.status)
   const showAvailability = ['availability-loading', 'availability-error', 'availability-ready'].includes(
     bookingState.status,
@@ -369,20 +390,20 @@ export const WidgetApp = ({
 
   const positionClasses = positionMap[position] ?? positionMap['bottom-right']
 
+  const isFullScreen = isExpanded && isMobileViewport
+
   const containerStyle: CSSProperties = {
     ...accentStyle,
-    width: isExpanded ? (isMobileViewport ? '100vw' : 'min(40vw, 640px)') : `${baseWidth}px`,
-    maxWidth: isExpanded ? (isMobileViewport ? '100vw' : 'calc(100vw - 32px)') : 'calc(100vw - 32px)',
-    paddingTop: isMobileViewport ? 'env(safe-area-inset-top)' : undefined,
-    paddingBottom: isMobileViewport ? 'env(safe-area-inset-bottom)' : undefined,
+    width: isFullScreen ? '100%' : isExpanded ? `min(40vw, 640px)` : `${baseWidth}px`,
+    maxWidth: isFullScreen ? '100vw' : 'calc(100vw - 32px)',
+    height: isFullScreen ? '100%' : undefined,
     zIndex: resolvedZIndex,
   }
 
-  const panelStyle: CSSProperties = isExpanded
-    ? isMobileViewport
-      ? { height: '100vh', paddingBottom: 'env(safe-area-inset-bottom)' }
-      : { height: '70vh', maxHeight: 'calc(100vh - 40px)' }
-    : { height: `${baseHeight}px`, maxHeight: 'calc(100vh - 40px)' }
+  const panelStyle: CSSProperties = {
+    height: isFullScreen ? '100%' : isExpanded ? '70vh' : `${baseHeight}px`,
+    maxHeight: isExpanded && !isMobileViewport ? 'calc(100vh - 40px)' : undefined,
+  }
 
   const panelContentClasses = [
     'flex flex-col gap-2 bg-slate-50/40 flex-1 overflow-y-auto',
@@ -392,13 +413,13 @@ export const WidgetApp = ({
   const containerClasses = [
     'pointer-events-none fixed flex flex-col transition-all',
     isMobileViewport ? 'gap-0' : 'gap-2',
-    isExpanded && isMobileViewport ? 'inset-0 items-stretch' : positionClasses.container,
+    isFullScreen ? 'inset-0 items-stretch' : positionClasses.container,
   ].join(' ')
 
   const panelClasses = [
-    'w-full flex flex-col border border-slate-200/40 bg-white shadow-sm transition',
+    'w-full flex flex-col border border-slate-200/40 bg-white shadow-sm transition-transform',
     positionClasses.origin,
-    isExpanded && isMobileViewport ? 'rounded-none' : 'rounded-lg',
+    isFullScreen ? 'rounded-none' : 'rounded-lg',
     isOpen
       ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
       : 'pointer-events-none translate-y-3 scale-95 opacity-0',
@@ -516,7 +537,7 @@ export const WidgetApp = ({
             </div>
             {!bookingActive && !inquiryActive && (
               <div className="border-t border-slate-200/60 bg-white px-4 py-3">
-                <Composer />
+                <Composer ref={composerRef} isMobileViewport={isMobileViewport} />
               </div>
             )}
           </MessageProvider>

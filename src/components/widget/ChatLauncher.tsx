@@ -8,7 +8,7 @@ type ChatLauncherProps = {
   onToggle: () => void
 }
 
-const DEFAULT_TOOLTIP = `Looking for the right service? I'm ${ASSISTANT_NAME} — happy to guide you.`
+const DEFAULT_TOOLTIP = `Looking for the right service? I'm ${ASSISTANT_NAME} - happy to guide you.`
 
 export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP, onToggle }: ChatLauncherProps) => {
   const [showTooltip, setShowTooltip] = useState(false)
@@ -59,7 +59,7 @@ export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP
         aria-label={isOpen ? `Close chat with ${ASSISTANT_NAME}` : `Open chat with ${ASSISTANT_NAME}`}
         className={`p-1 pointer-events-auto inline-flex items-center gap-2 rounded-full bg-slate-900 text-sm font-normal text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full overflow-hidden">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
           <img src={defaultLogoUrl} alt={`${ASSISTANT_NAME} profile photo`} className="h-full w-full object-cover" />
         </span>
         {isOpen ? '' : ``}
