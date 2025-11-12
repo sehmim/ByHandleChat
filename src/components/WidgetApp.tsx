@@ -74,6 +74,7 @@ export const WidgetApp = ({
   const bookingRequestRef = useRef(0)
   const bookingSubmissionRef = useRef(0)
   const inquirySubmissionRef = useRef(0)
+  const prefillDateRef = useRef<string | undefined>(undefined)
 
   const resolvedBusinessName = brandName || 'Handle Salon & Spa'
   const assistantAvatarUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
@@ -121,7 +122,7 @@ export const WidgetApp = ({
     return () => mediaQuery.removeListener(handleChange)
   }, [])
 
-  const loadServices = useCallback(() => {
+  const loadServices = useCallback((serviceId?: string) => {
     bookingRequestRef.current += 1
     const requestId = bookingRequestRef.current
     setBookingState({ status: 'services-loading' })
@@ -132,7 +133,11 @@ export const WidgetApp = ({
           setBookingState({ status: 'services-error' })
           return
         }
-        setBookingState({ status: 'services-ready', services, selectedServiceId: services[0].id })
+        setBookingState({
+          status: 'services-ready',
+          services,
+          selectedServiceId: serviceId ?? services[0].id,
+        })
       })
       .catch(() => {
         if (bookingRequestRef.current !== requestId) return
@@ -140,7 +145,7 @@ export const WidgetApp = ({
       })
   }, [])
 
-  const beginAvailabilityLookup = useCallback((service: BookingService) => {
+  const beginAvailabilityLookup = useCallback((service: BookingService, isoDate?: string) => {
     bookingRequestRef.current += 1
     const requestId = bookingRequestRef.current
     setBookingState({ status: 'availability-loading', service })
@@ -151,7 +156,12 @@ export const WidgetApp = ({
           setBookingState({ status: 'availability-error', service })
           return
         }
-        setBookingState({ status: 'availability-ready', service, days, selectedDate: days[0].date })
+        setBookingState({
+          status: 'availability-ready',
+          service,
+          days,
+          selectedDate: isoDate ?? days[0].date,
+        })
       })
       .catch(() => {
         if (bookingRequestRef.current !== requestId) return
@@ -159,9 +169,13 @@ export const WidgetApp = ({
       })
   }, [])
 
-  const startBookingFlow = useCallback(() => {
-    loadServices()
-  }, [loadServices])
+  const startBookingFlow = useCallback(
+    (serviceId?: string, isoDate?: string) => {
+      prefillDateRef.current = isoDate
+      loadServices(serviceId)
+    },
+    [loadServices],
+  )
 
   const closeBooking = useCallback(() => {
     bookingRequestRef.current += 1
@@ -184,7 +198,7 @@ export const WidgetApp = ({
       const selectedService =
         prev.services.find((service) => service.id === prev.selectedServiceId) ?? prev.services[0]
       if (!selectedService) return prev
-      beginAvailabilityLookup(selectedService)
+      beginAvailabilityLookup(selectedService, prefillDateRef.current)
       return prev
     })
   }, [beginAvailabilityLookup])
@@ -410,14 +424,14 @@ export const WidgetApp = ({
           chatbotId={chatbotId}
           welcomeMessage={welcomeMessage}
           emitEvent={emitEvent}
-          onAutoStartBooking={startBookingFlow}
+          onAutoStartBooking={(serviceId, isoDate) => startBookingFlow(serviceId, isoDate)}
           bookingSummary={bookingSummary}
         >
           <div className={panelContentClasses}>
               <SuggestionCards
                 bookingActive={bookingActive}
                 inquiryActive={inquiryActive}
-                onStartBooking={startBookingFlow}
+                onStartBooking={() => startBookingFlow()}
                 onStartInquiry={startInquiryFlow}
               />
               {showServiceSelection && (
@@ -427,7 +441,7 @@ export const WidgetApp = ({
                     { status: 'services-loading' | 'services-error' | 'services-ready' }
                   >}
                   onClose={closeBooking}
-                  onRetry={startBookingFlow}
+                  onRetry={() => startBookingFlow()}
                   onSelectService={selectServiceOption}
                   onContinue={handleServiceContinue}
                 />
@@ -440,7 +454,7 @@ export const WidgetApp = ({
                   >}
                   onClose={closeBooking}
                   onRetry={retryAvailability}
-                  onChangeService={startBookingFlow}
+                  onChangeService={() => startBookingFlow()}
                   onSelectDate={selectBookingDate}
                   onSelectSlot={handleSlotSelection}
                 />
@@ -494,7 +508,7 @@ export const WidgetApp = ({
               )}
               {!bookingActive && !inquiryActive && (
                 <ChatTranscript
-                  onStartBooking={startBookingFlow}
+                  onStartBooking={() => startBookingFlow()}
                   onStartInquiry={startInquiryFlow}
                   phoneNumber={phoneNumber}
                 />

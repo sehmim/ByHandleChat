@@ -34,12 +34,11 @@ const SummaryCard = ({ summary }: { summary: BookingSummary }) => (
 
 export const ChatTranscript = ({ onStartBooking, onStartInquiry, phoneNumber }: ChatTranscriptProps) => {
   const { messages } = useMessages()
-  const listRef = useRef<HTMLUListElement>(null)
+  const lastMessageRef = useRef<HTMLLIElement>(null)
 
   useEffect(() => {
-    const list = listRef.current
-    if (!list) return
-    list.scrollTo({ top: list.scrollHeight, behavior: 'smooth' })
+    if (!lastMessageRef.current) return
+    lastMessageRef.current.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
   const formatMessage = (content: string) => {
@@ -57,12 +56,17 @@ export const ChatTranscript = ({ onStartBooking, onStartInquiry, phoneNumber }: 
   }
 
   return (
-    <div className="rounded-lg border border-slate-200/60 bg-white p-2.5">
-      <ul ref={listRef} className="flex max-h-64 flex-col gap-1.5 overflow-y-auto pr-1.5 text-sm">
-        {messages.map((message) => {
+    <div className="mb-2 py-1 px-2.5">
+      <ul className="flex flex-col gap-1.5 overflow-y-auto pr-1.5 text-sm">
+        {messages.map((message, index) => {
           const isUser = message.sender === 'user'
+          const isLastMessage = index === messages.length - 1
           return (
-            <li key={message.id} className={`flex ${isUser ? 'justify-end' : 'justify-start'} flex-col ${isUser ? 'items-end' : 'items-start'}`}>
+            <li
+              key={message.id}
+              ref={isLastMessage ? lastMessageRef : null}
+              className={`flex ${isUser ? 'justify-end' : 'justify-start'} flex-col ${isUser ? 'items-end' : 'items-start'}`}
+            >
               <span
                 className={`max-w-[85%] rounded-lg px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap ${
                   isUser

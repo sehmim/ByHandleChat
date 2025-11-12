@@ -266,14 +266,46 @@ export async function POST(request: NextRequest) {
       throw new Error('No response from OpenAI')
     }
 
-    return NextResponse.json({
-      message: {
-        role: 'assistant',
-        content: responseMessage.content,
+    let responseContent = responseMessage.content
+    let serviceId: string | undefined
+    let isoDate: string | undefined
+
+    const jsonMatch = responseContent.match(/\{.*\}/s)
+    if (jsonMatch) {
+      try {
+        const extractedData = JSON.parse(jsonMatch[0])
+        responseContent = responseContent.replace(/\{.*\}/s, '').trim()
+
+        if (extractedData.serviceName) {
+          const service = BUSINESS_CONTEXT.services.find(
+            (s) => s.name.toLowerCase() === extractedData.serviceName.toLowerCase(),
+          )
+          if (service) {
+            serviceId = service.id
+          }
+        }
+
+        if (extractedData.date) {
+          isoDate = new Date(extractedData.date).toISOString().split('T')[0]
+        }
+      } catch (e) {
+        // Ignore if JSON is malformed
+      }
+    }
+
+    return NextResponse.json(
+      {
+        message: {
+          role: 'assistant',
+          content: responseContent,
+        },
+        userId,
+        chatbotId,
+        serviceId,
+        isoDate,
       },
-      userId,
-      chatbotId,
-    }, { headers })
+      { headers },
+    )
 
   } catch (error) {
     console.error('Chat API error:', error)

@@ -81,8 +81,8 @@ export const BookingServiceSelection = ({
     <section className="flex flex-col gap-4 rounded-lg border border-slate-200/40 bg-white p-4">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Choose a service</p>
-          <p className="mt-1 text-xs text-slate-500">Pick the visit type before we show calendar availability.</p>
+          <p className="text-sm font-semibold text-slate-900">Your selected service</p>
+          <p className="mt-1 text-xs text-slate-500">Confirm the service below and continue to calendar availability.</p>
         </div>
         <button
           type="button"

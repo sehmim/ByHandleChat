@@ -24,7 +24,7 @@ type MessageProviderProps = {
   chatbotId: string
   welcomeMessage?: string
   emitEvent?: (event: AnalyticsEvent) => void
-  onAutoStartBooking?: () => void
+  onAutoStartBooking?: (serviceId?: string, isoDate?: string) => void
   bookingSummary?: BookingSummary | null
   children: ReactNode
 }
@@ -163,7 +163,7 @@ export const MessageProvider = ({
           messageContent = messageContent.replace(/\[AUTO_START_BOOKING\]/g, '').trim()
           // Trigger booking flow after a short delay
           setTimeout(() => {
-            onAutoStartBooking?.()
+            onAutoStartBooking?.(data.serviceId, data.isoDate)
           }, 500)
         } else if (messageContent.includes('[SHOW_BOOKING_BUTTON]')) {
           showBookingButton = true
