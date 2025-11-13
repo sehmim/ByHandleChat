@@ -147,6 +147,7 @@ const replacePlaceholders = (template: string, values: Record<string, string>) =
 const buildSystemPrompt = () => {
   const replacements: Record<string, string> = {
     BUSINESS_NAME: BUSINESS_CONTEXT.name,
+    BUSINESS_TYPE: BUSINESS_CONTEXT.businessType,
     SERVICES: formatServicesList(BUSINESS_CONTEXT.services),
     HOURS: BUSINESS_CONTEXT.hours,
     LOCATION: BUSINESS_CONTEXT.location,

@@ -1,5 +1,6 @@
 export const BUSINESS_CONTEXT = {
   name: 'Handle Salon & Spa',
+  businessType: 'salon/spa', // e.g., 'salon/spa', 'restaurant', 'medical clinic', etc.
   description: 'A premium beauty and wellness center offering hair styling, spa treatments, and beauty services',
   services: [
     {
