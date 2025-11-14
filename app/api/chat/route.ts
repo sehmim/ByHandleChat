@@ -20,22 +20,55 @@ const openai = new OpenAI({
 })
 
 // CORS headers helper
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   'https://handle.gadget.app',
   'https://handle--development.gadget.app',
   'http://localhost:3000',
-  'http://localhost:5173'
+  'http://localhost:5173',
 ]
 
-const corsHeaders = (origin?: string) => {
-  const allowedOrigin = origin && allowedOrigins.includes(origin)
-    ? origin
-    : allowedOrigins[0]
+const configuredOrigins = process.env.WIDGET_ALLOWED_ORIGINS
+  ?.split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)
 
-  return {
-    'Access-Control-Allow-Origin': allowedOrigin,
+const allowedOrigins = configuredOrigins?.length
+  ? configuredOrigins
+  : [...defaultAllowedOrigins, '*']
+
+const allowAnyOrigin = allowedOrigins.includes('*')
+
+const corsHeaders = (origin?: string) => {
+  const baseHeaders = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  }
+
+  if (allowAnyOrigin) {
+    if (origin) {
+      return {
+        ...baseHeaders,
+        'Access-Control-Allow-Origin': origin,
+      }
+    }
+    return {
+      ...baseHeaders,
+      'Access-Control-Allow-Origin': '*',
+    }
+  }
+
+  if (origin && allowedOrigins.includes(origin)) {
+    return {
+      ...baseHeaders,
+      'Access-Control-Allow-Origin': origin,
+    }
+  }
+
+  return {
+    ...baseHeaders,
+    'Access-Control-Allow-Origin': allowedOrigins[0] ?? '*',
   }
 }
 
