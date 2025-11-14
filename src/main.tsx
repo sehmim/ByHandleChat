@@ -11,8 +11,10 @@ const DevApp = () => {
 
     // Use URL params if available, otherwise fall back to defaults
     const chatbotId = chatbotIdParam || '19'
+    const userId = urlParams.get('data-user-id') || urlParams.get('user-id') || '14'
+    const calendarSettingId = urlParams.get('data-calendar-setting-id') || urlParams.get('calendar-setting-id') || '6'
 
-    void initHandleChat({ chatbotId })
+    void initHandleChat({ userId, calendarSettingId, chatbotId })
   }, [])
 
   return (

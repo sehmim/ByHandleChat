@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useEffect, useState } from 'react'
 import type { BusinessContext } from '../../src/types/widget-config'
 import { DEFAULT_OPERATING_HOURS, formatOperatingHours, WEEK_DAYS } from '../../src/utils/business-hours'
 
@@ -156,15 +155,7 @@ const ColorInput = ({ label, value, onChange }: ColorInputProps) => (
 )
 
 export default function ConfigPage() {
-  const searchParams = useSearchParams()
-  const chatbotId = useMemo(
-    () =>
-      searchParams?.get('chatbot-id') ||
-      searchParams?.get('chatbotId') ||
-      searchParams?.get('data-chatbot-id') ||
-      '19',
-    [searchParams],
-  )
+  const [chatbotId, setChatbotId] = useState('19')
   const [config, setConfig] = useState<ConfigState | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -172,7 +163,15 @@ export default function ConfigPage() {
 
   // Load config on mount
   useEffect(() => {
-    fetch(`/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}`)
+    const params = new URLSearchParams(window.location.search)
+    const computedChatbotId =
+      params.get('chatbot-id') ||
+      params.get('chatbotId') ||
+      params.get('data-chatbot-id') ||
+      '19'
+    setChatbotId(computedChatbotId)
+
+    fetch(`/api/chatbot-configs?chatbotId=${encodeURIComponent(computedChatbotId)}`)
       .then((res) => res.json())
       .then((data) => {
         const hoursSchedule = data.businessContext.hoursSchedule ?? DEFAULT_OPERATING_HOURS
@@ -217,7 +216,7 @@ export default function ConfigPage() {
         setMessage({ type: 'error', text: 'Failed to load configuration' })
         setLoading(false)
       })
-  }, [chatbotId])
+  }, [])
 
   const handleSave = async () => {
     if (!config) return

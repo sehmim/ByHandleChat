@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
         responseContent = responseContent.replace(/\{.*\}/s, '').trim()
 
         if (extractedData.serviceName) {
-          const currentConfig = getCurrentConfig()
+          const currentConfig = await getCurrentConfig(resolvedChatbotId)
           const service = currentConfig.services.find(
             (s) => s.name.toLowerCase() === extractedData.serviceName.toLowerCase(),
           )
