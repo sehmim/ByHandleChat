@@ -247,9 +247,11 @@ const createMountHost = (userId: string, zIndex: number) => {
 const renderApp = (host: HTMLElement, options: InitOptions, uiConfig: WidgetUiConfig) => {
   const mountPoint = document.createElement('div')
   host.appendChild(mountPoint)
+  const apiBaseUrl = getWidgetBaseUrl()
 
   const widgetProps = {
     ...options,
+    apiBaseUrl,
     brandName: uiConfig.title,
     assistantName: uiConfig.assistant.name,
     assistantRole: uiConfig.assistant.role,

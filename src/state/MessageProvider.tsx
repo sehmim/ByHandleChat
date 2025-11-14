@@ -19,6 +19,7 @@ type MessageContextValue = {
 }
 
 type MessageProviderProps = {
+  apiBaseUrl: string
   clientId: string
   userId: string
   chatbotId: string
@@ -50,8 +51,11 @@ const createUserMessage = (content: string): Message => ({
   timestamp: new Date().toISOString(),
 })
 
+const normalizeBaseUrl = (url: string) => url.replace(/\/$/, '')
+
 export const MessageProvider = ({
   children,
+  apiBaseUrl,
   clientId,
   userId,
   chatbotId,
@@ -90,6 +94,12 @@ export const MessageProvider = ({
     summaryIdRef.current = bookingSummary.id
   }, [bookingSummary])
 
+  const chatEndpoint = useMemo(() => {
+    if (!apiBaseUrl) return '/api/chat'
+    const normalized = normalizeBaseUrl(apiBaseUrl)
+    return `${normalized}/api/chat`
+  }, [apiBaseUrl])
+
   const sendMessage = useCallback(
     async (content: string) => {
       const trimmed = content.trim()
@@ -119,7 +129,7 @@ export const MessageProvider = ({
         })
 
         // Call the chat API
-        const response = await fetch('/api/chat', {
+        const response = await fetch(chatEndpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -229,7 +239,17 @@ export const MessageProvider = ({
         setIsLoading(false)
       }
     },
-    [clientId, userId, chatbotId, messages, welcomeMessage, isLoading, emitEvent, onAutoStartBooking],
+    [
+      chatEndpoint,
+      clientId,
+      userId,
+      chatbotId,
+      messages,
+      welcomeMessage,
+      isLoading,
+      emitEvent,
+      onAutoStartBooking,
+    ],
   )
 
   const value = useMemo(

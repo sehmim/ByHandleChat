@@ -29,6 +29,7 @@ import type {
 } from './widget/types'
 
 type WidgetAppProps = {
+  apiBaseUrl: string
   userId?: string
   calendarSettingId?: string
   chatbotId: string
@@ -93,6 +94,7 @@ type WidgetAppProps = {
 }
 
 export const WidgetApp = ({
+  apiBaseUrl,
   userId = 'guest',
   calendarSettingId = '1',
   chatbotId,
@@ -568,6 +570,7 @@ export const WidgetApp = ({
         />
 
         <MessageProvider
+          apiBaseUrl={apiBaseUrl}
           clientId={clientId || userId}
           userId={userId}
           chatbotId={chatbotId}
