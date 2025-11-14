@@ -348,12 +348,16 @@ function HomeContent() {
                     onChange={(event) => {
                       const newValue = event.target.value
                       setChatbotIdInput(newValue)
+
+                      // Clear error when user starts typing
                       if (configError) {
                         setConfigError(null)
                       }
 
-                      // Clear URL if input is empty
-                      if (!newValue.trim()) {
+                      // Clear URL if input is empty OR if input differs from URL (user is editing)
+                      const shouldClearUrl = !newValue.trim() || (configError && newValue.trim() !== chatbotIdFromUrl)
+
+                      if (shouldClearUrl) {
                         const params = new URLSearchParams(searchParams.toString())
                         params.delete('data-chatbot-id')
                         params.delete('chatbotId')
