@@ -68,10 +68,11 @@ export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => 
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent/30 transition ${
+            className={`w-full px-3 py-2 border rounded-lg text-base focus:outline-none focus:ring-1 focus:ring-accent/30 transition ${
               errors.fullName ? 'border-red-300' : 'border-slate-200'
             }`}
             placeholder="John Doe"
+            style={{ fontSize: '16px' }}
           />
           {errors.fullName && <p className="mt-1 text-xs text-red-500">{errors.fullName}</p>}
         </div>
@@ -85,10 +86,11 @@ export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => 
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent/30 transition ${
+            className={`w-full px-3 py-2 border rounded-lg text-base focus:outline-none focus:ring-1 focus:ring-accent/30 transition ${
               errors.email ? 'border-red-300' : 'border-slate-200'
             }`}
             placeholder="john@example.com"
+            style={{ fontSize: '16px' }}
           />
           {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
         </div>
@@ -102,10 +104,11 @@ export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => 
             value={question}
             onChange={(e) => setQuestion(e.target.value)}
             rows={4}
-            className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-accent/30 transition resize-none ${
+            className={`w-full px-3 py-2 border rounded-lg text-base focus:outline-none focus:ring-1 focus:ring-accent/30 transition resize-none ${
               errors.question ? 'border-red-300' : 'border-slate-200'
             }`}
             placeholder="How can we help you?"
+            style={{ fontSize: '16px' }}
           />
           {errors.question && <p className="mt-1 text-xs text-red-500">{errors.question}</p>}
         </div>

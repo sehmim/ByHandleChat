@@ -93,7 +93,8 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
             onChange={(event) => setForm((prev) => ({ ...prev, fullName: event.target.value }))}
             placeholder="Jane Doe"
             required
-            className="rounded-lg border border-slate-200/60 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)]"
+            className="rounded-lg border border-slate-200/60 px-3 py-2 text-base text-slate-900 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)]"
+            style={{ fontSize: '16px' }}
           />
         </label>
         <label className="flex flex-col gap-2 text-xs font-medium text-slate-600">
@@ -104,7 +105,8 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
             onChange={(event) => setForm((prev) => ({ ...prev, email: event.target.value }))}
             placeholder="you@email.com"
             required
-            className="rounded-lg border border-slate-200/60 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)]"
+            className="rounded-lg border border-slate-200/60 px-3 py-2 text-base text-slate-900 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)]"
+            style={{ fontSize: '16px' }}
           />
         </label>
         <label className="flex flex-col gap-2 text-xs font-medium text-slate-600">
@@ -113,7 +115,8 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
             value={form.notes}
             onChange={(event) => setForm((prev) => ({ ...prev, notes: event.target.value }))}
             placeholder="Anything we should prepare ahead of time?"
-            className="min-h-[72px] rounded-lg border border-slate-200/60 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)]"
+            className="min-h-[72px] rounded-lg border border-slate-200/60 px-3 py-2 text-base text-slate-900 outline-none transition focus:border-[var(--byh-primary)] focus:ring-1 focus:ring-[var(--byh-primary)]"
+            style={{ fontSize: '16px' }}
           />
         </label>
         <button

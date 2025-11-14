@@ -95,8 +95,9 @@ export const BookingPayment = ({
               <input
                 value={cardholder}
                 onChange={(event) => setCardholder(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 outline-none focus:border-white"
+                className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-base text-white placeholder:text-white/60 outline-none focus:border-white"
                 placeholder="Jane Doe"
+                style={{ fontSize: '16px' }}
               />
             </label>
             <label className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
@@ -104,9 +105,10 @@ export const BookingPayment = ({
               <input
                 value={cardNumber}
                 onChange={(event) => setCardNumber(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 outline-none focus:border-white"
+                className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-base text-white placeholder:text-white/60 outline-none focus:border-white"
                 placeholder="4242 4242 4242 4242"
                 inputMode="numeric"
+                style={{ fontSize: '16px' }}
               />
             </label>
             <div className="flex gap-3">
@@ -115,8 +117,9 @@ export const BookingPayment = ({
                 <input
                   value={expiry}
                   onChange={(event) => setExpiry(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 outline-none focus:border-white"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-base text-white placeholder:text-white/60 outline-none focus:border-white"
                   placeholder="MM/YY"
+                  style={{ fontSize: '16px' }}
                 />
               </label>
               <label className="w-20 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/70">
@@ -124,9 +127,10 @@ export const BookingPayment = ({
                 <input
                   value={cvc}
                   onChange={(event) => setCvc(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white placeholder:text-white/60 outline-none focus:border-white"
+                  className="mt-1 w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-base text-white placeholder:text-white/60 outline-none focus:border-white"
                   placeholder="123"
                   inputMode="numeric"
+                  style={{ fontSize: '16px' }}
                 />
               </label>
             </div>

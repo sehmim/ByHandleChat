@@ -1,28 +1,32 @@
 import { useEffect, useState } from 'react'
-import { ASSISTANT_NAME, DEFAULT_ASSISTANT_AVATAR } from '../../constants/assistant'
 
 type ChatLauncherProps = {
   isOpen: boolean
-  logoUrl?: string
-  tooltipMessage?: string
+  logoUrl: string
+  tooltipMessage: string
+  tooltipDelay?: number
+  assistantName?: string
   onToggle: () => void
 }
 
-const DEFAULT_TOOLTIP = `Looking for the right service? I'm ${ASSISTANT_NAME} - happy to guide you.`
-
-export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP, onToggle }: ChatLauncherProps) => {
+export const ChatLauncher = ({
+  isOpen,
+  logoUrl,
+  tooltipMessage,
+  tooltipDelay = 5000,
+  assistantName = 'Assistant',
+  onToggle
+}: ChatLauncherProps) => {
   const [showTooltip, setShowTooltip] = useState(false)
-  // Default to Maya's photo
-  const defaultLogoUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
 
   useEffect(() => {
-    // Show tooltip after 5 seconds
+    // Show tooltip after configured delay
     const timer = setTimeout(() => {
       setShowTooltip(true)
-    }, 5000)
+    }, tooltipDelay)
 
     return () => clearTimeout(timer)
-  }, [])
+  }, [tooltipDelay])
 
   useEffect(() => {
     // Hide tooltip when chat is opened
@@ -56,11 +60,11 @@ export const ChatLauncher = ({ isOpen, logoUrl, tooltipMessage = DEFAULT_TOOLTIP
         type="button"
         onClick={handleClick}
         aria-expanded={isOpen}
-        aria-label={isOpen ? `Close chat with ${ASSISTANT_NAME}` : `Open chat with ${ASSISTANT_NAME}`}
+        aria-label={isOpen ? `Close chat with ${assistantName}` : `Open chat with ${assistantName}`}
         className={`p-1 pointer-events-auto inline-flex items-center gap-2 rounded-full bg-slate-900 text-sm font-normal text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md`}
       >
         <span className="flex h-10 w-10 items-center justify-center rounded-full overflow-hidden">
-          <img src={defaultLogoUrl} alt={`${ASSISTANT_NAME} profile photo`} className="h-full w-full object-cover" />
+          <img src={logoUrl} alt={`${assistantName} profile photo`} className="h-full w-full object-cover" />
         </span>
         {isOpen ? '' : ``}
       </button>

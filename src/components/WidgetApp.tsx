@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { MessageProvider } from '../state/MessageProvider'
 import type { AnalyticsEvent, ClientConfig } from '../types'
-import { ASSISTANT_NAME, ASSISTANT_ROLE, ASSISTANT_TAGLINE, DEFAULT_ASSISTANT_AVATAR } from '../constants/assistant'
+import { ASSISTANT_NAME, ASSISTANT_ROLE, DEFAULT_ASSISTANT_AVATAR } from '../constants/assistant'
 import { ChatLauncher } from './widget/ChatLauncher'
 import { ChatTranscript } from './widget/ChatTranscript'
 import { Composer } from './widget/Composer'
@@ -42,11 +42,26 @@ type WidgetAppProps = {
   position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
   zIndex?: number
   launcherMessage?: string
+  expandedWidth?: string
+  expandedHeight?: string
+  mobileBreakpoint?: number
+  tooltipDelay?: number
+  composerPlaceholder?: string
+  composerPlaceholderLoading?: string
+  ctaLabels?: {
+    booking: string
+    inquiry: string
+  }
+  successMessages?: {
+    bookingHeader: string
+    bookingMessage: string
+  }
+  headers?: {
+    bookAppointment: string
+    leaveMessage: string
+  }
   emitEvent?: (event: AnalyticsEvent) => void
 }
-
-const DEFAULT_PRIMARY = '#4f46e5'
-const FALLBACK_WELCOME = 'Thanks for stopping by! Leave a note and we will reply shortly.'
 
 export const WidgetApp = ({
   userId,
@@ -54,15 +69,24 @@ export const WidgetApp = ({
   chatbotId,
   clientId,
   brandName = 'Handle Salon & Spa',
-  primaryColor = DEFAULT_PRIMARY,
-  welcomeMessage = FALLBACK_WELCOME,
+  primaryColor = '#0f172a',
+  welcomeMessage = 'Thanks for stopping by! Leave a note and we will reply shortly.',
   logoUrl,
   phoneNumber,
-  panelWidth,
-  panelHeight,
+  panelWidth = 400,
+  panelHeight = 460,
   position = 'bottom-right',
-  zIndex,
+  zIndex = 2147483600,
   launcherMessage,
+  expandedWidth = 'min(40vw, 640px)',
+  expandedHeight = '70vh',
+  mobileBreakpoint = 640,
+  tooltipDelay = 5000,
+  composerPlaceholder = 'Write a message…',
+  composerPlaceholderLoading = 'Waiting for response...',
+  ctaLabels = { booking: 'Book appointment', inquiry: 'Leave a message' },
+  successMessages = { bookingHeader: 'All set!', bookingMessage: "Payment confirmed. We'll send reminders as your appointment approaches." },
+  headers = { bookAppointment: 'Book an appointment', leaveMessage: 'Leave a message' },
   emitEvent,
 }: WidgetAppProps) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -79,8 +103,8 @@ export const WidgetApp = ({
 
   const resolvedBusinessName = brandName || 'Handle Salon & Spa'
   const assistantAvatarUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
-  const assistantHeadline = `${ASSISTANT_NAME} — your ${ASSISTANT_ROLE}`
-  const assistantSubtitle = `${resolvedBusinessName} · ${ASSISTANT_TAGLINE}`
+  const assistantHeadline = `${ASSISTANT_NAME}`
+  const assistantSubtitle = `your ${ASSISTANT_ROLE}`
 
   const config: ClientConfig = {
     clientId: clientId || userId, // Use userId as fallback for clientId
@@ -112,7 +136,7 @@ export const WidgetApp = ({
 
   useEffect(() => {
     if (typeof window === 'undefined') return undefined
-    const mediaQuery = window.matchMedia('(max-width: 640px)')
+    const mediaQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`)
     const handleChange = () => setIsMobileViewport(mediaQuery.matches)
     handleChange()
     if (typeof mediaQuery.addEventListener === 'function') {
@@ -121,7 +145,7 @@ export const WidgetApp = ({
     }
     mediaQuery.addListener(handleChange)
     return () => mediaQuery.removeListener(handleChange)
-  }, [])
+  }, [mobileBreakpoint])
 
   const bookingActive = useMemo(() => bookingState.status !== 'idle', [bookingState.status]);
   const inquiryActive = useMemo(() => inquiryState.status !== 'idle', [inquiryState.status]);
@@ -374,9 +398,6 @@ export const WidgetApp = ({
     bookingState.status,
   )
   const accentStyle = { '--byh-primary': primaryColor } as CSSProperties
-  const baseWidth = panelWidth ?? 360
-  const baseHeight = panelHeight ?? 600
-  const resolvedZIndex = zIndex ?? 2147483000
 
   const positionMap: Record<
     NonNullable<WidgetAppProps['position']>,
@@ -394,14 +415,14 @@ export const WidgetApp = ({
 
   const containerStyle: CSSProperties = {
     ...accentStyle,
-    width: isFullScreen ? '100%' : isExpanded ? `min(40vw, 640px)` : `${baseWidth}px`,
+    width: isFullScreen ? '100%' : isExpanded ? expandedWidth : `${panelWidth}px`,
     maxWidth: isFullScreen ? '100vw' : 'calc(100vw - 32px)',
     height: isFullScreen ? '100%' : undefined,
-    zIndex: resolvedZIndex,
+    zIndex: zIndex,
   }
 
   const panelStyle: CSSProperties = {
-    height: isFullScreen ? '100%' : isExpanded ? '70vh' : `${baseHeight}px`,
+    height: isFullScreen ? '100%' : isExpanded ? expandedHeight : `${panelHeight}px`,
     maxHeight: isExpanded && !isMobileViewport ? 'calc(100vh - 40px)' : undefined,
   }
 
@@ -537,13 +558,25 @@ export const WidgetApp = ({
             </div>
             {!bookingActive && !inquiryActive && (
               <div className="border-t border-slate-200/60 bg-white px-4 py-3">
-                <Composer ref={composerRef} isMobileViewport={isMobileViewport} />
+                <Composer
+                  ref={composerRef}
+                  isMobileViewport={isMobileViewport}
+                  placeholder={composerPlaceholder}
+                  placeholderLoading={composerPlaceholderLoading}
+                />
               </div>
             )}
           </MessageProvider>
       </section>
 
-      <ChatLauncher isOpen={isOpen} logoUrl={assistantAvatarUrl} tooltipMessage={launcherMessage} onToggle={togglePanel} />
+      <ChatLauncher
+        isOpen={isOpen}
+        logoUrl={assistantAvatarUrl}
+        tooltipMessage={launcherMessage || ''}
+        tooltipDelay={tooltipDelay}
+        assistantName={assistantHeadline}
+        onToggle={togglePanel}
+      />
     </div>
   )
 }

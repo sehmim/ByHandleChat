@@ -5,13 +5,11 @@ import { initHandleChat } from '../src/widget'
 
 export default function Home() {
   useEffect(() => {
-    // Try to get parameters from URL first
     const urlParams = new URLSearchParams(window.location.search)
     const userIdParam = urlParams.get('data-user-id') || urlParams.get('user-id')
     const calendarSettingIdParam = urlParams.get('data-calendar-setting-id') || urlParams.get('calendar-setting-id')
     const chatbotIdParam = urlParams.get('data-chatbot-id') || urlParams.get('chatbot-id')
 
-    // Use URL params if available, otherwise fall back to defaults
     const userId = userIdParam || '14'
     const calendarSettingId = calendarSettingIdParam || '6'
     const chatbotId = chatbotIdParam || '19'
@@ -20,15 +18,28 @@ export default function Home() {
       userId,
       calendarSettingId,
       chatbotId,
-      brandName: urlParams.get('brand-name') || 'Handle',
-      primaryColor: urlParams.get('primary-color') || '#2563eb',
-      welcomeMessage: urlParams.get('welcome-message') || "Hey there! I'm the Handle assistant. Im here to answer your inquiries, Book appointments and handle payments!",
-      logoUrl: urlParams.get('logo-url') || undefined,
       clientId: urlParams.get('client-id') || undefined,
     })
   }, [])
 
   return (
-    <main></main>
+    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      <div className="max-w-7xl mx-auto py-12 px-4">
+        <div className="text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-4">ByHandle Chat Widget</h1>
+          <p className="text-lg text-gray-600 mb-8">
+            The widget is active in the bottom-right corner. Click it to start chatting!
+          </p>
+          <div className="inline-flex gap-4">
+            <a
+              href="/config"
+              className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md"
+            >
+              Configure Widget →
+            </a>
+          </div>
+        </div>
+      </div>
+    </main>
   )
 }

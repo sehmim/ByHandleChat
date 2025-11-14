@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import SYSTEM_PROMPT_TEMPLATE from './system-prompt'
-import { BUSINESS_CONTEXT } from '../../../src/business-context'
+import { getCurrentConfig } from '../config-manager'
 
 export const runtime = 'edge'
 
@@ -135,7 +135,7 @@ function validateAndSanitizeMessages(messages: ChatMessage[]): {
   return { valid: true, sanitized }
 }
 
-const formatServicesList = (services: typeof BUSINESS_CONTEXT.services) =>
+const formatServicesList = (services: any[]) =>
   services.map((service) => `• ${service.name}: ${service.price} (${service.duration})`).join('\n')
 
 const replacePlaceholders = (template: string, values: Record<string, string>) =>
@@ -145,6 +145,8 @@ const replacePlaceholders = (template: string, values: Record<string, string>) =
   )
 
 const buildSystemPrompt = () => {
+  const BUSINESS_CONTEXT = getCurrentConfig()
+
   const replacements: Record<string, string> = {
     BUSINESS_NAME: BUSINESS_CONTEXT.name,
     BUSINESS_TYPE: BUSINESS_CONTEXT.businessType,
@@ -158,8 +160,6 @@ const buildSystemPrompt = () => {
 
   return replacePlaceholders(SYSTEM_PROMPT_TEMPLATE, replacements)
 }
-
-const SYSTEM_PROMPT = buildSystemPrompt()
 
 // Handle OPTIONS request for CORS preflight
 export async function OPTIONS(request: NextRequest) {
@@ -242,9 +242,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Build system prompt dynamically from current config
+    const systemPrompt = buildSystemPrompt()
+
     // Prepare messages for OpenAI (add system prompt)
     const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      { role: 'system', content: systemPrompt },
       ...sanitizedMessages.map(msg => ({
         role: msg.role as 'user' | 'assistant',
         content: msg.content,
@@ -278,7 +281,8 @@ export async function POST(request: NextRequest) {
         responseContent = responseContent.replace(/\{.*\}/s, '').trim()
 
         if (extractedData.serviceName) {
-          const service = BUSINESS_CONTEXT.services.find(
+          const currentConfig = getCurrentConfig()
+          const service = currentConfig.services.find(
             (s) => s.name.toLowerCase() === extractedData.serviceName.toLowerCase(),
           )
           if (service) {

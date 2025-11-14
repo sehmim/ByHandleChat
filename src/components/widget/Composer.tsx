@@ -3,9 +3,12 @@ import { useMessages } from '../../state/MessageProvider'
 
 type ComposerProps = {
   isMobileViewport: boolean
+  placeholder?: string
+  placeholderLoading?: string
 }
 
-export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(({ isMobileViewport }, ref) => {
+export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(
+  ({ isMobileViewport, placeholder = 'Write a message…', placeholderLoading = 'Waiting for response...' }, ref) => {
   const { sendMessage, isLoading } = useMessages()
   const [value, setValue] = useState('')
   const localTextareaRef = useRef<HTMLTextAreaElement | null>(null)
@@ -53,7 +56,7 @@ export const Composer = forwardRef<HTMLTextAreaElement, ComposerProps>(({ isMobi
         onKeyDown={handleKeyDown}
         rows={1}
         aria-label="Message"
-        placeholder={isLoading ? 'Waiting for response...' : 'Write a message…'}
+        placeholder={isLoading ? placeholderLoading : placeholder}
         disabled={isLoading}
         className={composerClasses}
         style={{ fontSize: isMobileViewport ? '16px' : undefined }}
