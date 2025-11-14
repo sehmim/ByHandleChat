@@ -28,6 +28,8 @@ import type {
   InquiryState,
 } from './widget/types'
 
+const normalizeDate = (value: string) => value.slice(0, 10)
+
 type WidgetAppProps = {
   apiBaseUrl: string
   userId?: string
@@ -261,11 +263,16 @@ export const WidgetApp = ({
           setBookingState({ status: 'availability-error', service })
           return
         }
+        const normalizedDays = days.map((day) => ({
+          ...day,
+          date: normalizeDate(day.date),
+        }))
+        const normalizedSelectedDate = isoDate ? normalizeDate(isoDate) : normalizedDays[0].date
         setBookingState({
           status: 'availability-ready',
           service,
-          days,
-          selectedDate: isoDate ?? days[0].date,
+          days: normalizedDays,
+          selectedDate: normalizedSelectedDate,
         })
       })
       .catch(() => {
@@ -319,7 +326,7 @@ export const WidgetApp = ({
   const selectBookingDate = useCallback((isoDate: string) => {
     setBookingState((prev) => {
       if (prev.status !== 'availability-ready') return prev
-      return { ...prev, selectedDate: isoDate }
+      return { ...prev, selectedDate: isoDate.slice(0, 10) }
     })
   }, [])
 

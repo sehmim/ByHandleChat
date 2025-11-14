@@ -1,5 +1,5 @@
-import type { BookingSelection, BookingState } from '../types'
-import { formatCurrency, formatDateShort } from './helpers'
+import { useMemo, type ChangeEvent } from 'react'
+import type { BookingSelection, BookingDay, BookingState } from '../types'
 
 type AvailabilityState = Extract<
   BookingState,
@@ -80,8 +80,38 @@ export const BookingAvailability = ({
     return null
   }
 
-  const selectedDay = state.days.find((day) => day.date === state.selectedDate) ?? state.days[0]
-  const formattedPrice = formatCurrency(state.service.priceCents)
+  const availabilityByDate = useMemo(
+    () =>
+      state.days.reduce<Record<string, (typeof state.days)[number]>>((acc, day) => {
+        acc[day.date] = day
+        return acc
+      }, {}),
+    [state.days],
+  )
+
+  const selectedDateValue = state.selectedDate || state.days[0]?.date || ''
+  const selectedDay: BookingDay =
+    availabilityByDate[selectedDateValue] ??
+    (selectedDateValue
+      ? {
+          date: selectedDateValue,
+          slots: [],
+        }
+      : state.days[0])
+  const firstAvailableDate = state.days[0]?.date ?? ''
+  const lastAvailableDate = state.days[state.days.length - 1]?.date ?? firstAvailableDate
+
+  const handleDateInputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    let nextDate = event.target.value
+    if (!nextDate) return
+    if (firstAvailableDate && nextDate < firstAvailableDate) {
+      nextDate = firstAvailableDate
+    }
+    if (lastAvailableDate && nextDate > lastAvailableDate) {
+      nextDate = lastAvailableDate
+    }
+    onSelectDate(nextDate)
+  }
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-slate-200/40 bg-slate-50 p-4">
@@ -104,18 +134,15 @@ export const BookingAvailability = ({
 
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Dates</p>
-        <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-          {state.days.map((day) => (
-            <button
-              key={day.date}
-              type="button"
-              data-selected={day.date === selectedDay.date}
-              onClick={() => onSelectDate(day.date)}
-              className="min-w-[96px] rounded-lg border border-slate-200/60 bg-white px-3 py-2 text-left text-xs font-semibold text-slate-700 transition hover:border-slate-300 data-[selected=true]:border-slate-900 data-[selected=true]:bg-slate-900 data-[selected=true]:text-white"
-            >
-              {formatDateShort(day.date)}
-            </button>
-          ))}
+        <div className="mt-2 flex items-center gap-2">
+          <input
+            type="date"
+            value={selectedDateValue}
+            min={firstAvailableDate || undefined}
+            max={state.days[state.days.length - 1]?.date || undefined}
+            onChange={handleDateInputChange}
+            className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none"
+          />
         </div>
       </div>
 

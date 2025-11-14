@@ -15,7 +15,7 @@ const formatSlotLabel = (minutes: number) => {
   return `${normalizedHours}:${paddedMins} ${period}`
 }
 
-const createSlots = () => {
+const createSlotCatalog = () => {
   const slots: string[] = []
   for (let mins = SLOT_START_MINUTES; mins <= SLOT_END_MINUTES; mins += SLOT_INTERVAL_MINUTES) {
     slots.push(formatSlotLabel(mins))
@@ -23,17 +23,29 @@ const createSlots = () => {
   return slots
 }
 
+const SLOT_CATALOG = createSlotCatalog()
+
+const pickRandomSlots = () => {
+  const slots = SLOT_CATALOG.filter(() => Math.random() > 0.35)
+  if (slots.length === 0) {
+    const fallbackIndex = Math.floor(Math.random() * SLOT_CATALOG.length)
+    slots.push(SLOT_CATALOG[fallbackIndex])
+  }
+  return slots
+}
+
 const createMockAvailability = (): BookingDay[] => {
-  const base = new Date()
-  base.setDate(base.getDate() + 1)
-  base.setHours(0, 0, 0, 0)
-  const slots = createSlots()
-  return Array.from({ length: 5 }).map((_, index) => {
-    const date = new Date(base)
-    date.setDate(base.getDate() + index)
+  const start = new Date()
+  start.setDate(start.getDate() + 1)
+  start.setHours(0, 0, 0, 0)
+
+  return Array.from({ length: 21 }).map((_, index) => {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    const isoDate = date.toISOString().slice(0, 10)
     return {
-      date: date.toISOString(),
-      slots: slots.filter((_, slotIndex) => !(index % 2 === 1 && slotIndex % 3 === 0)),
+      date: isoDate,
+      slots: pickRandomSlots(),
     }
   })
 }
