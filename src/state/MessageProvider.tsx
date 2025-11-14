@@ -104,8 +104,10 @@ export const MessageProvider = ({
       emitEvent?.({ type: 'message_sent', clientId, content: trimmed })
 
       try {
-        // Build conversation history for API
-        const conversationHistory = messages.map((msg) => ({
+        // Build conversation history for API (skip messages with empty content)
+        const conversationHistory = messages
+          .filter((msg) => msg.content && msg.content.trim())
+          .map((msg) => ({
             role: msg.sender === 'user' ? ('user' as const) : ('assistant' as const),
             content: msg.content,
           }))
@@ -141,12 +143,12 @@ export const MessageProvider = ({
 
         const data = await response.json()
 
-        if (!data.message || !data.message.content) {
+        if (!data.message) {
           throw new Error('Invalid response from server')
         }
 
         // Check if response contains booking markers
-        let messageContent = data.message.content
+        let messageContent = data.message.content || ''
         let showBookingButton = false
         let autoStartBooking = false
         let showInquiryButton = false
@@ -163,6 +165,11 @@ export const MessageProvider = ({
             // Ignore malformed JSON
           }
           messageContent = messageContent.replace(cardRegex, '').trim()
+        }
+
+        // Validate that we have either content or a service card
+        if (!messageContent && !serviceCard) {
+          throw new Error('Invalid response from server')
         }
 
         // Check for inquiry flow trigger (highest priority - for human handoff and security)
@@ -185,6 +192,10 @@ export const MessageProvider = ({
           messageContent = messageContent.replace(/\[SHOW_BOOKING_BUTTON\]/g, '').trim()
         }
 
+        // Check for follow-up message trigger
+        const shouldSendFollowup = messageContent.includes('[SEND_FOLLOWUP_MESSAGE]')
+        messageContent = messageContent.replace(/\[SEND_FOLLOWUP_MESSAGE\]/g, '').trim()
+
         // Add bot response to messages
         const botMessage = {
           ...createBotMessage(messageContent),
@@ -194,6 +205,16 @@ export const MessageProvider = ({
           serviceCard,
         }
         setMessages((prev) => [...prev, botMessage])
+
+        // Send follow-up message after a delay if marker was present
+        if (shouldSendFollowup) {
+          setTimeout(() => {
+            const followupMessage = createBotMessage(
+              "Is there a specific service you're interested in, or do you have any questions about what we offer?"
+            )
+            setMessages((prev) => [...prev, followupMessage])
+          }, 1500)
+        }
       } catch (err) {
         console.error('Chat API error:', err)
         const errorMessage = err instanceof Error ? err.message : 'Something went wrong. Please try again.'

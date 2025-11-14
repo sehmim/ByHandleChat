@@ -307,16 +307,15 @@ export async function POST(request: NextRequest) {
         })),
       }
 
-      // Remove any bullet list formatting of services from the response
-      // Look for patterns like "• **ServiceName**: $price (duration) — description"
-      const serviceBulletPattern = /^[•\-*]\s+\*\*[^*]+\*\*[^\n]+$/gm
-      responseContent = responseContent.replace(serviceBulletPattern, '').trim()
-
-      // Remove multiple consecutive newlines
-      responseContent = responseContent.replace(/\n{3,}/g, '\n\n').trim()
+      // Step 1: Service cards will render via SERVICE_CARD marker
+      // Step 2: Follow-up question will be sent as a separate auto-message
+      responseContent = ""
 
       // Append the service card marker
-      responseContent += `\n\n[SERVICE_CARD]${JSON.stringify(serviceCardData)}[/SERVICE_CARD]`
+      responseContent += `[SERVICE_CARD]${JSON.stringify(serviceCardData)}[/SERVICE_CARD]`
+
+      // Add marker to trigger follow-up message
+      responseContent += `\n\n[SEND_FOLLOWUP_MESSAGE]`
     }
 
     const jsonMatch = responseContent.match(/\{.*\}/s)
