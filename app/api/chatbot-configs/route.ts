@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { DEFAULT_CHATBOT_ID, getCurrentConfig, updateConfig } from '../config-manager'
+import { DEFAULT_CHATBOT_ID, getCurrentConfig, updateConfig, type FullConfig } from '../config-manager'
+import { fetchConfigRow } from '../../../src/lib/supabase'
 
 const parseChatbotId = (request: NextRequest, fallback?: string) => {
   const { searchParams } = new URL(request.url)
   return (
     searchParams.get('chatbotId') ||
     searchParams.get('chatbot-id') ||
+    searchParams.get('configId') ||
+    searchParams.get('config-id') ||
+    searchParams.get('chatbot_id') ||
+    searchParams.get('id') ||
     fallback ||
     DEFAULT_CHATBOT_ID
   )
+}
+
+const parseStrictFlag = (request: NextRequest) => {
+  const { searchParams } = new URL(request.url)
+  return searchParams.get('strict') === 'true'
 }
 
 const serializeConfigResponse = (config: Awaited<ReturnType<typeof getCurrentConfig>>) => ({
@@ -56,6 +66,20 @@ const serializeConfigResponse = (config: Awaited<ReturnType<typeof getCurrentCon
 // GET endpoint to retrieve current chatbot config
 export async function GET(request: NextRequest) {
   const chatbotId = parseChatbotId(request)
+  const isStrict = parseStrictFlag(request)
+
+  if (isStrict) {
+    const existingConfig = (await fetchConfigRow(chatbotId)) as FullConfig | null
+    if (!existingConfig) {
+      return NextResponse.json(
+        { error: `Chatbot config not found for id "${chatbotId}"` },
+        { status: 404 },
+      )
+    }
+
+    return NextResponse.json(serializeConfigResponse(existingConfig))
+  }
+
   const config = await getCurrentConfig(chatbotId)
 
   return NextResponse.json(serializeConfigResponse(config))

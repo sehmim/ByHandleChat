@@ -23,8 +23,11 @@ type InitOptions = {
 
 type WidgetInstance = {
   userId: string
+  chatbotId: string
   destroy: () => void
 }
+
+const makeInstanceKey = (userId: string, chatbotId: string) => `${userId}::${chatbotId}`
 
 type WidgetUiConfig = {
   title: string
@@ -83,6 +86,7 @@ type WidgetUiConfig = {
 
 const instances = new Map<string, WidgetInstance>()
 const pendingInits = new Map<string, Promise<WidgetInstance | null>>()
+const latestInstanceKeyByUser = new Map<string, string>()
 
 const emitEvent = (event: AnalyticsEvent) => {
   window.dispatchEvent(new CustomEvent('byhandle-chat-event', { detail: event }))
@@ -90,7 +94,9 @@ const emitEvent = (event: AnalyticsEvent) => {
 
 const fetchWidgetConfig = async (userId: string, chatbotId: string): Promise<WidgetUiConfig> => {
   try {
-    const response = await fetch(`/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}`)
+    const response = await fetch(
+      `/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}&strict=true`,
+    )
     if (!response.ok) {
       throw new Error('Failed to fetch widget config')
     }
@@ -262,6 +268,7 @@ const ensureDomReady = (callback: () => void) => {
 
 export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | null> | null => {
   const { userId, calendarSettingId, chatbotId } = options
+  const instanceKey = makeInstanceKey(userId, chatbotId)
 
   if (!userId) {
     console.warn('[HandleChat] Missing userId. Skipping initialization.')
@@ -278,12 +285,19 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
     return null
   }
 
-  if (instances.has(userId)) {
-    return Promise.resolve(instances.get(userId)!)
+  const activeKeyForUser = latestInstanceKeyByUser.get(userId)
+  if (activeKeyForUser && activeKeyForUser !== instanceKey) {
+    const staleInstance = instances.get(activeKeyForUser)
+    staleInstance?.destroy()
+    pendingInits.delete(activeKeyForUser)
   }
 
-  if (pendingInits.has(userId)) {
-    return pendingInits.get(userId)!
+  if (instances.has(instanceKey)) {
+    return Promise.resolve(instances.get(instanceKey)!)
+  }
+
+  if (pendingInits.has(instanceKey)) {
+    return pendingInits.get(instanceKey)!
   }
 
   const mount = async () => {
@@ -294,30 +308,35 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
 
       const instance: WidgetInstance = {
         userId,
+        chatbotId,
         destroy: () => {
           root.unmount()
           host.remove()
-          instances.delete(userId)
+          instances.delete(instanceKey)
+          if (latestInstanceKeyByUser.get(userId) === instanceKey) {
+            latestInstanceKeyByUser.delete(userId)
+          }
         },
       }
 
-      instances.set(userId, instance)
+      instances.set(instanceKey, instance)
+      latestInstanceKeyByUser.set(userId, instanceKey)
       return instance
     } finally {
-      pendingInits.delete(userId)
+      pendingInits.delete(instanceKey)
     }
   }
 
   if (!document.body) {
     ensureDomReady(() => {
       const promise = initHandleChat(options)
-      if (promise) pendingInits.set(userId, promise)
+      if (promise) pendingInits.set(instanceKey, promise)
     })
     return null
   }
 
   const mountPromise = mount()
-  pendingInits.set(userId, mountPromise)
+  pendingInits.set(instanceKey, mountPromise)
   return mountPromise
 }
 
