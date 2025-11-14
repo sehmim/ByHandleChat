@@ -92,10 +92,23 @@ const emitEvent = (event: AnalyticsEvent) => {
   window.dispatchEvent(new CustomEvent('byhandle-chat-event', { detail: event }))
 }
 
+const getWidgetBaseUrl = (): string => {
+  // Try to get the base URL from the script tag
+  const script = document.querySelector<HTMLScriptElement>('script[src*="widget.js"]')
+  if (script?.src) {
+    const url = new URL(script.src)
+    return `${url.protocol}//${url.host}`
+  }
+
+  // Fallback to current origin (for development)
+  return typeof window !== 'undefined' ? window.location.origin : ''
+}
+
 const fetchWidgetConfig = async (userId: string, chatbotId: string): Promise<WidgetUiConfig> => {
   try {
+    const baseUrl = getWidgetBaseUrl()
     const response = await fetch(
-      `/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}&strict=true`,
+      `${baseUrl}/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}&strict=true`,
     )
     if (!response.ok) {
       throw new Error('Failed to fetch widget config')
