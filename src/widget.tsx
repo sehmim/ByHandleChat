@@ -13,7 +13,7 @@ import {
 import type { AssistantConfig, BusinessContext as BusinessContextConfig } from './types/widget-config'
 
 const WIDGET_STYLE_ID = 'byhandle-chat-widget-styles'
-const CONFIGURED_WIDGET_API_URL = (process.env.NEXT_PUBLIC_WIDGET_API_URL ?? '').trim()
+const CONFIGURED_WIDGET_API_URL = 'https://handle-chat.vercel.app'
 
 const ensureWidgetStyles = () => {
   if (typeof document === 'undefined') return
