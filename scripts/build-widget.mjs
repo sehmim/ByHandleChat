@@ -62,6 +62,9 @@ async function buildWidget() {
       plugins: [inlineCssPlugin],
       define: {
         'process.env.NODE_ENV': '"production"',
+        'process.env.NEXT_PUBLIC_WIDGET_API_URL': JSON.stringify(
+          process.env.NEXT_PUBLIC_WIDGET_API_URL ?? ''
+        ),
       },
       jsx: 'automatic',
       loader: {

@@ -13,6 +13,7 @@ import {
 import type { AssistantConfig, BusinessContext as BusinessContextConfig } from './types/widget-config'
 
 const WIDGET_STYLE_ID = 'byhandle-chat-widget-styles'
+const CONFIGURED_WIDGET_API_URL = (process.env.NEXT_PUBLIC_WIDGET_API_URL ?? '').trim()
 
 const ensureWidgetStyles = () => {
   if (typeof document === 'undefined') return
@@ -103,16 +104,22 @@ const emitEvent = (event: AnalyticsEvent) => {
   window.dispatchEvent(new CustomEvent('byhandle-chat-event', { detail: event }))
 }
 
+const normalizeBaseUrl = (url: string): string => url.replace(/\/$/, '')
+
 const getWidgetBaseUrl = (): string => {
+  if (CONFIGURED_WIDGET_API_URL) {
+    return normalizeBaseUrl(CONFIGURED_WIDGET_API_URL)
+  }
+
   // Try to get the base URL from the script tag
   const script = document.querySelector<HTMLScriptElement>('script[src*="widget.js"]')
   if (script?.src) {
     const url = new URL(script.src)
-    return `${url.protocol}//${url.host}`
+    return normalizeBaseUrl(`${url.protocol}//${url.host}`)
   }
 
   // Fallback to current origin (for development)
-  return typeof window !== 'undefined' ? window.location.origin : ''
+  return typeof window !== 'undefined' ? normalizeBaseUrl(window.location.origin) : ''
 }
 
 const fetchWidgetConfig = async (userId: string, chatbotId: string): Promise<WidgetUiConfig> => {
