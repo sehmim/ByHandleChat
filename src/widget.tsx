@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { WidgetApp } from './components/WidgetApp'
-import './widget.css'
+import widgetCss from './widget.css?inline'
 import type { AnalyticsEvent } from './types'
 import { BUSINESS_CONTEXT } from './business-context'
 import {
@@ -11,6 +11,17 @@ import {
   DEFAULT_ASSISTANT_AVATAR,
 } from './constants/assistant'
 import type { AssistantConfig, BusinessContext as BusinessContextConfig } from './types/widget-config'
+
+const WIDGET_STYLE_ID = 'byhandle-chat-widget-styles'
+
+const ensureWidgetStyles = () => {
+  if (typeof document === 'undefined') return
+  if (document.getElementById(WIDGET_STYLE_ID)) return
+  const style = document.createElement('style')
+  style.id = WIDGET_STYLE_ID
+  style.textContent = widgetCss
+  document.head.appendChild(style)
+}
 
 type ChatbotPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 
@@ -220,9 +231,8 @@ const createMountHost = (userId: string, zIndex: number) => {
   host.style.position = 'fixed'
   host.style.bottom = '0'
   host.style.right = '0'
-  host.style.width = '0'
-  host.style.height = '0'
   host.style.zIndex = String(zIndex)
+  host.style.pointerEvents = 'none'
   document.body.appendChild(host)
   return host
 }
@@ -309,9 +319,81 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
 
   const mount = async () => {
     try {
-      const uiConfig = await fetchWidgetConfig(userId, chatbotId)
-      const host = createMountHost(userId, uiConfig.zIndex)
-      const { root } = renderApp(host, options, uiConfig)
+      ensureWidgetStyles()
+      // Create host and render with default config immediately
+      const defaultConfig = {
+        title: 'Chat Support',
+        welcomeMessage: 'Hi! How can we help you today?',
+        primaryColor: '#0f172a',
+        logoUrl: '',
+        panelWidth: 400,
+        panelHeight: 460,
+        position: 'bottom-right' as const,
+        zIndex: 2147483600,
+        launcherMessage: '',
+        expandedWidth: 'min(40vw, 640px)',
+        expandedHeight: '70vh',
+        mobileBreakpoint: 640,
+        tooltipDelay: 5000,
+        composerPlaceholder: 'Write a message…',
+        composerPlaceholderLoading: 'Waiting for response...',
+        ctaLabels: { booking: 'Book appointment', inquiry: 'Leave a message' },
+        successMessages: { bookingHeader: 'All set!', bookingMessage: "Payment confirmed. We'll send reminders as your appointment approaches." },
+        headers: { bookAppointment: 'Book an appointment', leaveMessage: 'Leave a message' },
+        colors: {
+          backgroundColor: '#ffffff',
+          textColor: '#1e293b',
+          primaryColor: '#0f172a',
+          accentColor: '#0f172a',
+          borderColor: '#e2e8f0',
+          buttonColor: '#0f172a',
+          buttonHoverColor: '#1e293b',
+          errorColor: '#ef4444',
+          successColor: '#10b981',
+          warningColor: '#f59e0b',
+          launcherBackgroundColor: '#0f172a',
+          headerBackgroundColor: '#ffffff',
+          composerBackgroundColor: '#ffffff',
+          panelBackgroundColor: '#f8fafc',
+        },
+        typography: {
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '14px',
+          fontWeight: '400',
+          headingFontFamily: 'system-ui, -apple-system, sans-serif',
+          headingFontWeight: '700',
+        },
+        assistant: {
+          name: 'Assistant',
+          role: 'Support Agent',
+          tagline: 'Here to help',
+          avatar: '',
+        },
+        businessContext: {
+          name: 'Business',
+          businessType: 'Service',
+          description: '',
+          services: [],
+          hours: '',
+          location: '',
+          policies: { cancellation: '', lateness: '', payment: '' },
+          hoursSchedule: [],
+          serviceFocusPrompt: '',
+        },
+      }
+
+      const host = createMountHost(userId, defaultConfig.zIndex)
+      const { root } = renderApp(host, options, defaultConfig)
+
+      // Fetch actual config and update in background
+      fetchWidgetConfig(userId, chatbotId)
+        .then((uiConfig) => {
+          // Re-render with fetched config
+          renderApp(host, options, uiConfig)
+        })
+        .catch((error) => {
+          console.error('[HandleChat] Failed to fetch config, using defaults:', error)
+        })
 
       const instance: WidgetInstance = {
         userId,
