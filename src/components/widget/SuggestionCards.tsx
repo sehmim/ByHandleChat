@@ -5,12 +5,16 @@ type SuggestionCardsProps = {
   inquiryActive: boolean
   onStartBooking: () => void
   onStartInquiry: () => void
+  ctaLabels?: {
+    booking: string
+    inquiry: string
+  }
 }
 
-const suggestions = [
+const getSuggestions = (ctaLabels: { booking: string; inquiry: string }) => [
   {
     id: 'appointment',
-    title: 'Book appointment',
+    title: ctaLabels.booking,
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
         <rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.5" />
@@ -20,7 +24,7 @@ const suggestions = [
   },
   {
     id: 'inquiry',
-    title: 'Leave a message',
+    title: ctaLabels.inquiry,
     icon: (
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
         <path
@@ -35,11 +39,19 @@ const suggestions = [
   },
 ] as const
 
-export const SuggestionCards = ({ bookingActive, inquiryActive, onStartBooking, onStartInquiry }: SuggestionCardsProps) => {
+export const SuggestionCards = ({
+  bookingActive,
+  inquiryActive,
+  onStartBooking,
+  onStartInquiry,
+  ctaLabels = { booking: 'Book appointment', inquiry: 'Leave a message' }
+}: SuggestionCardsProps) => {
   const { hasInteracted } = useMessages()
 
   // Hide completely if booking or inquiry flows are active
   if (bookingActive || inquiryActive) return null
+
+  const suggestions = getSuggestions(ctaLabels)
 
   const handleClick = (id: string) => {
     if (id === 'appointment') {

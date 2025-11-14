@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { MessageProvider } from '../state/MessageProvider'
 import type { AnalyticsEvent, ClientConfig } from '../types'
 import { ASSISTANT_NAME, ASSISTANT_ROLE, DEFAULT_ASSISTANT_AVATAR } from '../constants/assistant'
+import type { BusinessContext } from '../types/widget-config'
 import { ChatLauncher } from './widget/ChatLauncher'
 import { ChatTranscript } from './widget/ChatTranscript'
 import { Composer } from './widget/Composer'
@@ -33,6 +34,11 @@ type WidgetAppProps = {
   chatbotId: string
   clientId?: string
   brandName?: string
+  assistantName?: string
+  assistantRole?: string
+  assistantTagline?: string
+  assistantAvatar?: string
+  businessContext?: BusinessContext
   primaryColor?: string
   welcomeMessage?: string
   logoUrl?: string
@@ -60,6 +66,29 @@ type WidgetAppProps = {
     bookAppointment: string
     leaveMessage: string
   }
+  colors?: {
+    backgroundColor: string
+    textColor: string
+    primaryColor: string
+    accentColor: string
+    borderColor: string
+    buttonColor: string
+    buttonHoverColor: string
+    errorColor: string
+    successColor: string
+    warningColor: string
+    launcherBackgroundColor: string
+    headerBackgroundColor: string
+    composerBackgroundColor: string
+    panelBackgroundColor: string
+  }
+  typography?: {
+    fontFamily: string
+    fontSize: string
+    fontWeight: string
+    headingFontFamily: string
+    headingFontWeight: string
+  }
   emitEvent?: (event: AnalyticsEvent) => void
 }
 
@@ -69,6 +98,11 @@ export const WidgetApp = ({
   chatbotId,
   clientId,
   brandName = 'Handle Salon & Spa',
+  assistantName,
+  assistantRole,
+  assistantTagline,
+  assistantAvatar,
+  businessContext,
   primaryColor = '#0f172a',
   welcomeMessage = 'Thanks for stopping by! Leave a note and we will reply shortly.',
   logoUrl,
@@ -87,6 +121,29 @@ export const WidgetApp = ({
   ctaLabels = { booking: 'Book appointment', inquiry: 'Leave a message' },
   successMessages = { bookingHeader: 'All set!', bookingMessage: "Payment confirmed. We'll send reminders as your appointment approaches." },
   headers = { bookAppointment: 'Book an appointment', leaveMessage: 'Leave a message' },
+  colors = {
+    backgroundColor: '#FFFFFF',
+    textColor: '#0f172a',
+    primaryColor: '#0f172a',
+    accentColor: '#3b82f6',
+    borderColor: '#e2e8f0',
+    buttonColor: '#0f172a',
+    buttonHoverColor: '#1e293b',
+    errorColor: '#ef4444',
+    successColor: '#22c55e',
+    warningColor: '#f59e0b',
+    launcherBackgroundColor: '#0f172a',
+    headerBackgroundColor: '#FFFFFF',
+    composerBackgroundColor: '#FFFFFF',
+    panelBackgroundColor: '#f8fafc',
+  },
+  typography = {
+    fontFamily: "'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    fontSize: '14px',
+    fontWeight: '400',
+    headingFontFamily: "'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+    headingFontWeight: '700',
+  },
   emitEvent,
 }: WidgetAppProps) => {
   const [isOpen, setIsOpen] = useState(false)
@@ -101,10 +158,11 @@ export const WidgetApp = ({
   const prefillDateRef = useRef<string | undefined>(undefined)
   const composerRef = useRef<HTMLTextAreaElement>(null)
 
-  const resolvedBusinessName = brandName || 'Handle Salon & Spa'
-  const assistantAvatarUrl = logoUrl || DEFAULT_ASSISTANT_AVATAR
-  const assistantHeadline = `${ASSISTANT_NAME}`
-  const assistantSubtitle = `your ${ASSISTANT_ROLE}`
+  const resolvedBusinessName = brandName || businessContext?.name || 'Handle Salon & Spa'
+  const assistantAvatarUrl = assistantAvatar || logoUrl || DEFAULT_ASSISTANT_AVATAR
+  const assistantHeadline = assistantName ?? ASSISTANT_NAME
+  const assistantSubtitle =
+    assistantTagline || `your ${assistantRole ?? ASSISTANT_ROLE}`
 
   const config: ClientConfig = {
     clientId: clientId || userId, // Use userId as fallback for clientId
@@ -164,28 +222,31 @@ export const WidgetApp = ({
     }
   }, [isOpen, bookingActive, inquiryActive])
 
-  const loadServices = useCallback((serviceId?: string) => {
-    bookingRequestRef.current += 1
-    const requestId = bookingRequestRef.current
-    setBookingState({ status: 'services-loading' })
-    mockFetchServices()
-      .then((services) => {
-        if (bookingRequestRef.current !== requestId) return
-        if (!services.length) {
-          setBookingState({ status: 'services-error' })
-          return
-        }
-        setBookingState({
-          status: 'services-ready',
-          services,
-          selectedServiceId: serviceId ?? services[0].id,
+  const loadServices = useCallback(
+    (serviceId?: string) => {
+      bookingRequestRef.current += 1
+      const requestId = bookingRequestRef.current
+      setBookingState({ status: 'services-loading' })
+      mockFetchServices(businessContext?.services)
+        .then((services) => {
+          if (bookingRequestRef.current !== requestId) return
+          if (!services.length) {
+            setBookingState({ status: 'services-error' })
+            return
+          }
+          setBookingState({
+            status: 'services-ready',
+            services,
+            selectedServiceId: serviceId ?? services[0].id,
+          })
         })
-      })
-      .catch(() => {
-        if (bookingRequestRef.current !== requestId) return
-        setBookingState({ status: 'services-error' })
-      })
-  }, [])
+        .catch(() => {
+          if (bookingRequestRef.current !== requestId) return
+          setBookingState({ status: 'services-error' })
+        })
+    },
+    [businessContext?.services],
+  )
 
   const beginAvailabilityLookup = useCallback((service: BookingService, isoDate?: string) => {
     bookingRequestRef.current += 1
@@ -397,7 +458,29 @@ export const WidgetApp = ({
   const showAvailability = ['availability-loading', 'availability-error', 'availability-ready'].includes(
     bookingState.status,
   )
-  const accentStyle = { '--byh-primary': primaryColor } as CSSProperties
+
+  const themeStyle = {
+    '--byh-primary': primaryColor,
+    '--byh-bg-color': colors.backgroundColor,
+    '--byh-text-color': colors.textColor,
+    '--byh-primary-color': colors.primaryColor,
+    '--byh-accent-color': colors.accentColor,
+    '--byh-border-color': colors.borderColor,
+    '--byh-button-color': colors.buttonColor,
+    '--byh-button-hover-color': colors.buttonHoverColor,
+    '--byh-error-color': colors.errorColor,
+    '--byh-success-color': colors.successColor,
+    '--byh-warning-color': colors.warningColor,
+    '--byh-launcher-bg-color': colors.launcherBackgroundColor,
+    '--byh-header-bg-color': colors.headerBackgroundColor,
+    '--byh-composer-bg-color': colors.composerBackgroundColor,
+    '--byh-panel-bg-color': colors.panelBackgroundColor,
+    '--byh-font-family': typography.fontFamily,
+    '--byh-font-size': typography.fontSize,
+    '--byh-font-weight': typography.fontWeight,
+    '--byh-heading-font-family': typography.headingFontFamily,
+    '--byh-heading-font-weight': typography.headingFontWeight,
+  } as CSSProperties
 
   const positionMap: Record<
     NonNullable<WidgetAppProps['position']>,
@@ -414,7 +497,7 @@ export const WidgetApp = ({
   const isFullScreen = isExpanded && isMobileViewport
 
   const containerStyle: CSSProperties = {
-    ...accentStyle,
+    ...themeStyle,
     width: isFullScreen ? '100%' : isExpanded ? expandedWidth : `${panelWidth}px`,
     maxWidth: isFullScreen ? '100vw' : 'calc(100vw - 32px)',
     height: isFullScreen ? '100%' : undefined,
@@ -475,6 +558,7 @@ export const WidgetApp = ({
                 inquiryActive={inquiryActive}
                 onStartBooking={() => startBookingFlow()}
                 onStartInquiry={startInquiryFlow}
+                ctaLabels={ctaLabels}
               />
               {showServiceSelection && (
                 <BookingServiceSelection
@@ -499,6 +583,7 @@ export const WidgetApp = ({
                   onChangeService={() => startBookingFlow()}
                   onSelectDate={selectBookingDate}
                   onSelectSlot={handleSlotSelection}
+                  header={headers.bookAppointment}
                 />
               )}
               {bookingState.status === 'details' && (
@@ -530,6 +615,7 @@ export const WidgetApp = ({
                   payment={bookingState.payment}
                   onClose={closeBooking}
                   onBack={handleBackToAvailability}
+                  successMessages={successMessages}
                 />
               )}
               {inquiryState.status === 'form' && (
@@ -537,6 +623,7 @@ export const WidgetApp = ({
                   config={config}
                   onClose={closeInquiry}
                   onSubmit={handleInquiryFormSubmit}
+                  header={headers.leaveMessage}
                 />
               )}
               {inquiryState.status === 'submitting' && (

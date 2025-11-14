@@ -6,9 +6,10 @@ type InquiryFormProps = {
   config: ClientConfig
   onClose: () => void
   onSubmit: (form: InquiryFormData) => void
+  header?: string
 }
 
-export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => {
+export const InquiryForm = ({ config, onClose, onSubmit, header = 'Leave a message' }: InquiryFormProps) => {
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [question, setQuestion] = useState('')
@@ -45,7 +46,7 @@ export const InquiryForm = ({ config, onClose, onSubmit }: InquiryFormProps) => 
   return (
     <div className="rounded-lg border border-slate-200/30 bg-white">
       <div className="flex items-center justify-between border-b border-slate-200/30 px-2 py-2">
-        <h3 className="text-sm font-normal text-slate-800">Leave a message</h3>
+        <h3 className="text-sm font-normal text-slate-800">{header}</h3>
         <button
           type="button"
           onClick={onClose}

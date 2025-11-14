@@ -23,7 +23,7 @@ export default function Home() {
   }, [])
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <main className="min-h-screen from-slate-50 to-slate-100">
       <div className="max-w-7xl mx-auto py-12 px-4">
         <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">ByHandle Chat Widget</h1>
@@ -33,7 +33,7 @@ export default function Home() {
           <div className="inline-flex gap-4">
             <a
               href="/config"
-              className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition shadow-md"
+              className="px-6 py-3 text-black"
             >
               Configure Widget →
             </a>

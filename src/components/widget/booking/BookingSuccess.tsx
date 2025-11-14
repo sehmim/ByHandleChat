@@ -8,15 +8,30 @@ type BookingSuccessProps = {
   payment: BookingPayment
   onClose: () => void
   onBack?: () => void
+  successMessages?: {
+    bookingHeader: string
+    bookingMessage: string
+  }
 }
 
-export const BookingSuccess = ({ service, selection, form, payment, onClose, onBack }: BookingSuccessProps) => (
+export const BookingSuccess = ({
+  service,
+  selection,
+  form,
+  payment,
+  onClose,
+  onBack,
+  successMessages = {
+    bookingHeader: 'All set!',
+    bookingMessage: "Payment confirmed. We'll send reminders as your appointment approaches."
+  }
+}: BookingSuccessProps) => (
   <section className="space-y-4 rounded-lg border border-slate-200/40 bg-white p-4">
     <header className="flex items-start justify-between gap-4">
       <div>
-        <p className="text-sm font-semibold text-slate-900">All set!</p>
+        <p className="text-sm font-semibold text-slate-900">{successMessages.bookingHeader}</p>
         <p className="mt-1 text-xs text-slate-500">
-          Payment confirmed. We'll send reminders as your appointment approaches.
+          {successMessages.bookingMessage}
         </p>
       </div>
       <button

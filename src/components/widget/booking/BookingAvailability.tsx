@@ -13,6 +13,7 @@ type BookingAvailabilityProps = {
   onChangeService: () => void
   onSelectDate: (date: string) => void
   onSelectSlot: (selection: BookingSelection) => void
+  header?: string
 }
 
 export const BookingAvailability = ({
@@ -22,6 +23,7 @@ export const BookingAvailability = ({
   onChangeService,
   onSelectDate,
   onSelectSlot,
+  header = 'Book an appointment'
 }: BookingAvailabilityProps) => {
   if (state.status === 'availability-loading') {
     return (
@@ -85,7 +87,7 @@ export const BookingAvailability = ({
     <section className="flex flex-col gap-4 rounded-lg border border-slate-200/40 bg-slate-50 p-4">
       <header className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-sm font-semibold text-slate-900">Book an appointment</p>
+          <p className="text-sm font-semibold text-slate-900">{header}</p>
           <p className="mt-1 text-xs text-slate-500">
             Select a date and time for <strong>{state.service.name.toLowerCase()}</strong>.
           </p>

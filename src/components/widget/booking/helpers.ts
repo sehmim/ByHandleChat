@@ -1,5 +1,6 @@
 import type { BookingDay, BookingService } from '../types'
 import { BUSINESS_CONTEXT } from '../../../business-context'
+import type { BusinessContext } from '../../../types/widget-config'
 
 const SLOT_INTERVAL_MINUTES = 30
 const SLOT_START_MINUTES = 9 * 60
@@ -42,17 +43,16 @@ export const mockFetchAvailability = () =>
     setTimeout(() => resolve(createMockAvailability()), 600)
   })
 
-export const mockFetchServices = () =>
+export const mockFetchServices = (services?: BusinessContext['services']) =>
   new Promise<BookingService[]>((resolve) => {
-    setTimeout(() => resolve(
-      BUSINESS_CONTEXT.services.map((service) => ({
-        id: service.id,
-        name: service.name,
-        durationMinutes: service.durationMinutes,
-        priceCents: service.priceCents,
-        description: service.description,
-      })),
-    ), 500)
+    const resolvedServices = (services ?? BUSINESS_CONTEXT.services).map((service) => ({
+      id: service.id,
+      name: service.name,
+      durationMinutes: service.durationMinutes,
+      priceCents: service.priceCents,
+      description: service.description,
+    }))
+    setTimeout(() => resolve(resolvedServices), 500)
   })
 
 export const mockSubmitBooking = () =>

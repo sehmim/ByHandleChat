@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import SYSTEM_PROMPT_TEMPLATE from './system-prompt'
-import { getCurrentConfig } from '../config-manager'
-
-export const runtime = 'edge'
+import { DEFAULT_CHATBOT_ID, getCurrentConfig } from '../config-manager'
 
 type ChatMessage = {
   role: 'user' | 'assistant' | 'system'
@@ -136,7 +134,12 @@ function validateAndSanitizeMessages(messages: ChatMessage[]): {
 }
 
 const formatServicesList = (services: any[]) =>
-  services.map((service) => `• ${service.name}: ${service.price} (${service.duration})`).join('\n')
+  services
+    .map(
+      (service) =>
+        `${service.name}: ${service.price} (${service.duration}) — ${service.description}`,
+    )
+    .join('\n')
 
 const replacePlaceholders = (template: string, values: Record<string, string>) =>
   Object.entries(values).reduce(
@@ -144,9 +147,7 @@ const replacePlaceholders = (template: string, values: Record<string, string>) =
     template,
   )
 
-const buildSystemPrompt = () => {
-  const BUSINESS_CONTEXT = getCurrentConfig()
-
+const buildSystemPrompt = (BUSINESS_CONTEXT: Awaited<ReturnType<typeof getCurrentConfig>>) => {
   const replacements: Record<string, string> = {
     BUSINESS_NAME: BUSINESS_CONTEXT.name,
     BUSINESS_TYPE: BUSINESS_CONTEXT.businessType,
@@ -156,6 +157,10 @@ const buildSystemPrompt = () => {
     CANCELLATION: BUSINESS_CONTEXT.policies.cancellation,
     LATENESS: BUSINESS_CONTEXT.policies.lateness,
     PAYMENT: BUSINESS_CONTEXT.policies.payment,
+    ASSISTANT_NAME: BUSINESS_CONTEXT.assistantName,
+    ASSISTANT_ROLE: BUSINESS_CONTEXT.assistantRole,
+    ASSISTANT_TAGLINE: BUSINESS_CONTEXT.assistantTagline,
+    SERVICE_FOCUS_PROMPT: BUSINESS_CONTEXT.serviceFocusPrompt,
   }
 
   return replacePlaceholders(SYSTEM_PROMPT_TEMPLATE, replacements)
@@ -243,7 +248,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Build system prompt dynamically from current config
-    const systemPrompt = buildSystemPrompt()
+    const resolvedChatbotId = chatbotId || DEFAULT_CHATBOT_ID
+    const currentConfig = await getCurrentConfig(resolvedChatbotId)
+
+    const systemPrompt = buildSystemPrompt(currentConfig)
 
     // Prepare messages for OpenAI (add system prompt)
     const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
@@ -305,7 +313,7 @@ export async function POST(request: NextRequest) {
           content: responseContent,
         },
         userId,
-        chatbotId,
+        chatbotId: resolvedChatbotId,
         serviceId,
         isoDate,
       },

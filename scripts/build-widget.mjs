@@ -2,24 +2,47 @@ import * as esbuild from 'esbuild'
 import { readFileSync, copyFileSync, mkdirSync } from 'fs'
 import { resolve, dirname } from 'path'
 import { fileURLToPath } from 'url'
+import postcss from 'postcss'
+import tailwindcss from 'tailwindcss'
+import autoprefixer from 'autoprefixer'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 
-// Plugin to handle CSS imports with ?inline
+// Plugin to compile Tailwind + autoprefixer for the widget CSS
 const inlineCssPlugin = {
   name: 'inline-css',
   setup(build) {
-    build.onResolve({ filter: /\.css\?inline$/ }, (args) => ({
-      path: resolve(args.resolveDir, args.path.replace('?inline', '')),
-      namespace: 'inline-css',
-    }))
+    const cssFilter = /\.css(?:\?inline)?$/
 
-    build.onLoad({ filter: /.*/, namespace: 'inline-css' }, (args) => {
-      const css = readFileSync(args.path, 'utf8')
+    build.onResolve({ filter: cssFilter }, (args) => {
+      const inline = args.path.endsWith('?inline')
+      const cleanedPath = args.path.replace(/\?inline$/, '')
+      if (!cleanedPath.endsWith('widget.css')) return
+
       return {
-        contents: `export default ${JSON.stringify(css)}`,
-        loader: 'js',
+        path: resolve(args.resolveDir, cleanedPath),
+        namespace: 'inline-css',
+        pluginData: { inline },
+      }
+    })
+
+    build.onLoad({ filter: /.*/, namespace: 'inline-css' }, async (args) => {
+      const css = readFileSync(args.path, 'utf8')
+      const result = await postcss([tailwindcss(), autoprefixer()]).process(css, {
+        from: args.path,
+      })
+
+      if (args.pluginData?.inline) {
+        return {
+          contents: `export default ${JSON.stringify(result.css)}`,
+          loader: 'js',
+        }
+      }
+
+      return {
+        contents: result.css,
+        loader: 'css',
       }
     })
   },

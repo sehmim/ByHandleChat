@@ -3,7 +3,14 @@ import { createRoot, type Root } from 'react-dom/client'
 import { WidgetApp } from './components/WidgetApp'
 import './widget.css'
 import type { AnalyticsEvent } from './types'
-import { ASSISTANT_NAME, ASSISTANT_ROLE, DEFAULT_ASSISTANT_AVATAR } from './constants/assistant'
+import { BUSINESS_CONTEXT } from './business-context'
+import {
+  ASSISTANT_NAME,
+  ASSISTANT_ROLE,
+  ASSISTANT_TAGLINE,
+  DEFAULT_ASSISTANT_AVATAR,
+} from './constants/assistant'
+import type { AssistantConfig, BusinessContext as BusinessContextConfig } from './types/widget-config'
 
 type ChatbotPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 
@@ -47,6 +54,31 @@ type WidgetUiConfig = {
     bookAppointment: string
     leaveMessage: string
   }
+  colors: {
+    backgroundColor: string
+    textColor: string
+    primaryColor: string
+    accentColor: string
+    borderColor: string
+    buttonColor: string
+    buttonHoverColor: string
+    errorColor: string
+    successColor: string
+    warningColor: string
+    launcherBackgroundColor: string
+    headerBackgroundColor: string
+    composerBackgroundColor: string
+    panelBackgroundColor: string
+  }
+  typography: {
+    fontFamily: string
+    fontSize: string
+    fontWeight: string
+    headingFontFamily: string
+    headingFontWeight: string
+  }
+  assistant: AssistantConfig
+  businessContext: BusinessContextConfig
 }
 
 const instances = new Map<string, WidgetInstance>()
@@ -56,15 +88,22 @@ const emitEvent = (event: AnalyticsEvent) => {
   window.dispatchEvent(new CustomEvent('byhandle-chat-event', { detail: event }))
 }
 
-const fetchWidgetConfig = async (userId: string): Promise<WidgetUiConfig> => {
+const fetchWidgetConfig = async (userId: string, chatbotId: string): Promise<WidgetUiConfig> => {
   try {
-    const response = await fetch('/api/chatbot-configs')
+    const response = await fetch(`/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}`)
     if (!response.ok) {
       throw new Error('Failed to fetch widget config')
     }
 
     const data = await response.json()
     const ui = data.uiConfig
+    const assistant: AssistantConfig = {
+      name: data.assistant?.name ?? ASSISTANT_NAME,
+      role: data.assistant?.role ?? ASSISTANT_ROLE,
+      tagline: data.assistant?.tagline ?? ASSISTANT_TAGLINE,
+      avatar: data.assistant?.avatar ?? DEFAULT_ASSISTANT_AVATAR,
+    }
+    const businessContext = data.businessContext ?? BUSINESS_CONTEXT
 
     return {
       title: ui.title,
@@ -85,6 +124,10 @@ const fetchWidgetConfig = async (userId: string): Promise<WidgetUiConfig> => {
       ctaLabels: ui.ctaLabels,
       successMessages: ui.successMessages,
       headers: ui.headers,
+      colors: ui.colors,
+      typography: ui.typography,
+      assistant,
+      businessContext,
     }
   } catch (error) {
     console.error('[HandleChat] Error fetching config:', error)
@@ -117,6 +160,36 @@ const fetchWidgetConfig = async (userId: string): Promise<WidgetUiConfig> => {
         bookAppointment: 'Book an appointment',
         leaveMessage: 'Leave a message',
       },
+      colors: {
+        backgroundColor: '#FFFFFF',
+        textColor: '#0f172a',
+        primaryColor: '#0f172a',
+        accentColor: '#3b82f6',
+        borderColor: '#e2e8f0',
+        buttonColor: '#0f172a',
+        buttonHoverColor: '#1e293b',
+        errorColor: '#ef4444',
+        successColor: '#22c55e',
+        warningColor: '#f59e0b',
+        launcherBackgroundColor: '#0f172a',
+        headerBackgroundColor: '#FFFFFF',
+        composerBackgroundColor: '#FFFFFF',
+        panelBackgroundColor: '#f8fafc',
+      },
+      typography: {
+        fontFamily: "'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontSize: '14px',
+        fontWeight: '400',
+        headingFontFamily: "'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        headingFontWeight: '700',
+      },
+      assistant: {
+        name: ASSISTANT_NAME,
+        role: ASSISTANT_ROLE,
+        tagline: ASSISTANT_TAGLINE,
+        avatar: DEFAULT_ASSISTANT_AVATAR,
+      },
+      businessContext: BUSINESS_CONTEXT,
     }
   }
 }
@@ -142,6 +215,11 @@ const renderApp = (host: HTMLElement, options: InitOptions, uiConfig: WidgetUiCo
   const widgetProps = {
     ...options,
     brandName: uiConfig.title,
+    assistantName: uiConfig.assistant.name,
+    assistantRole: uiConfig.assistant.role,
+    assistantTagline: uiConfig.assistant.tagline,
+    assistantAvatar: uiConfig.assistant.avatar,
+    businessContext: uiConfig.businessContext,
     welcomeMessage: uiConfig.welcomeMessage,
     primaryColor: uiConfig.primaryColor,
     logoUrl: uiConfig.logoUrl,
@@ -159,6 +237,8 @@ const renderApp = (host: HTMLElement, options: InitOptions, uiConfig: WidgetUiCo
     ctaLabels: uiConfig.ctaLabels,
     successMessages: uiConfig.successMessages,
     headers: uiConfig.headers,
+    colors: uiConfig.colors,
+    typography: uiConfig.typography,
   }
 
   const root: Root = createRoot(mountPoint)
@@ -208,7 +288,7 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
 
   const mount = async () => {
     try {
-      const uiConfig = await fetchWidgetConfig(userId)
+      const uiConfig = await fetchWidgetConfig(userId, chatbotId)
       const host = createMountHost(userId, uiConfig.zIndex)
       const { root } = renderApp(host, options, uiConfig)
 

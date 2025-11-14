@@ -164,7 +164,7 @@ export const MessageProvider = ({
           // Trigger booking flow after a short delay
           setTimeout(() => {
             onAutoStartBooking?.(data.serviceId, data.isoDate)
-          }, 500)
+          }, 2200)
         } else if (messageContent.includes('[SHOW_BOOKING_BUTTON]')) {
           showBookingButton = true
           // Remove the marker from the displayed content

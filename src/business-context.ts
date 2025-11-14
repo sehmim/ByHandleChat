@@ -1,3 +1,5 @@
+import { DEFAULT_OPERATING_HOURS, formatOperatingHours } from './utils/business-hours'
+
 export const BUSINESS_CONTEXT = {
   name: 'Handle Salon & Spa',
   businessType: 'salon/spa', // e.g., 'salon/spa', 'restaurant', 'medical clinic', etc.
@@ -40,11 +42,13 @@ export const BUSINESS_CONTEXT = {
       description: 'Custom facial ritual with cleansing, extraction, and LED therapy.',
     },
   ],
-  hours: 'Monday-Saturday: 9 AM - 7 PM, Sunday: 10 AM - 5 PM',
+  hours: formatOperatingHours(DEFAULT_OPERATING_HOURS),
+  hoursSchedule: DEFAULT_OPERATING_HOURS,
   location: '123 Main Street, Downtown',
   policies: {
     cancellation: '24-hour notice required for cancellations to avoid fees',
     lateness: 'Please arrive 10 minutes early. Late arrivals may result in shortened service time',
     payment: 'We accept all major credit cards, debit cards, and digital wallets',
   },
+  serviceFocusPrompt: 'Are you looking for something relaxing, therapeutic, or cosmetic?',
 }
