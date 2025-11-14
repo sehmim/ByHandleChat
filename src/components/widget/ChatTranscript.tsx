@@ -1,10 +1,10 @@
 import { useEffect, useRef } from 'react'
 import { formatCurrency, formatDateLong } from './booking/helpers'
-import type { BookingSummary } from '../../types'
+import type { BookingSummary, ServiceCard } from '../../types'
 import { useMessages } from '../../state/MessageProvider'
 
 type ChatTranscriptProps = {
-  onStartBooking?: () => void
+  onStartBooking?: (serviceId?: string) => void
   onStartInquiry?: () => void
   phoneNumber?: string
 }
@@ -29,6 +29,42 @@ const SummaryCard = ({ summary }: { summary: BookingSummary }) => (
     <p className="text-[11px] text-slate-500">
       Charged to {summary.payment.brand} ending in {summary.payment.last4}
     </p>
+  </div>
+)
+
+const ServiceCardDisplay = ({ card, onServiceClick }: { card: ServiceCard; onServiceClick?: (serviceId: string) => void }) => (
+  <div className="mt-2 mb-2 w-full max-w-[95%]">
+    {card.title && (
+      <p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-500">{card.title}</p>
+    )}
+    <div className="grid grid-cols-2 gap-2">
+      {card.services.map((service) => (
+        <button
+          key={service.id ?? service.name}
+          onClick={() => service.id && onServiceClick?.(service.id)}
+          className="rounded-lg border border-slate-200/70 bg-white p-2 shadow-sm hover:shadow-md hover:border-slate-300 hover:scale-[1.02] transition-all cursor-pointer text-left"
+        >
+          <div className="mb-1">
+            <h3 className="text-[11px] font-semibold text-slate-900 leading-tight line-clamp-2 mb-0.5">
+              {service.name}
+            </h3>
+            <span className="text-xs font-bold text-slate-900">
+              {service.price}
+            </span>
+          </div>
+          <p className="text-[10px] text-slate-600 leading-snug mb-1.5 line-clamp-2">
+            {service.description}
+          </p>
+          <div className="flex items-center gap-1 text-[8px] uppercase tracking-wide text-slate-500">
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" className="text-slate-400">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2.5"/>
+              <path d="M12 6v6l4 2" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"/>
+            </svg>
+            {service.duration}
+          </div>
+        </button>
+      ))}
+    </div>
   </div>
 )
 
@@ -67,6 +103,12 @@ export const ChatTranscript = ({ onStartBooking, onStartInquiry, phoneNumber }: 
               ref={isLastMessage ? lastMessageRef : null}
               className={`flex ${isUser ? 'justify-end' : 'justify-start'} flex-col ${isUser ? 'items-end' : 'items-start'}`}
             >
+              {!isUser && message.serviceCard && (
+                <ServiceCardDisplay
+                  card={message.serviceCard}
+                  onServiceClick={(serviceId) => onStartBooking?.(serviceId)}
+                />
+              )}
               <span
                 className={`max-w-[85%] rounded-lg px-3 py-2 text-[13px] leading-relaxed whitespace-pre-wrap ${
                   isUser
@@ -79,7 +121,7 @@ export const ChatTranscript = ({ onStartBooking, onStartInquiry, phoneNumber }: 
               {!isUser && message.showBookingButton && onStartBooking && (
                 <button
                   type="button"
-                  onClick={onStartBooking}
+                  onClick={() => onStartBooking()}
                   className="mt-2 flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:opacity-90 hover:shadow"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">

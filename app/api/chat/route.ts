@@ -161,6 +161,15 @@ const buildSystemPrompt = (BUSINESS_CONTEXT: Awaited<ReturnType<typeof getCurren
     ASSISTANT_ROLE: BUSINESS_CONTEXT.assistantRole,
     ASSISTANT_TAGLINE: BUSINESS_CONTEXT.assistantTagline,
     SERVICE_FOCUS_PROMPT: BUSINESS_CONTEXT.serviceFocusPrompt,
+    SERVICE_CARD_JSON: JSON.stringify({
+      services: BUSINESS_CONTEXT.services.map((service) => ({
+        id: service.id,
+        name: service.name,
+        price: service.price,
+        duration: service.duration,
+        description: service.description,
+      })),
+    }),
   }
 
   return replacePlaceholders(SYSTEM_PROMPT_TEMPLATE, replacements)
@@ -282,8 +291,36 @@ export async function POST(request: NextRequest) {
     let serviceId: string | undefined
     let isoDate: string | undefined
 
+    // Check if AI is listing services and inject SERVICE_CARD if not already present
+    const hasServiceCardMarker = responseContent.includes('[SERVICE_CARD]')
+    const isListingServices = /(?:here are|these are|services offered|check out these|take a look at)/i.test(responseContent)
+
+    if (!hasServiceCardMarker && isListingServices) {
+      // Inject the SERVICE_CARD marker
+      const serviceCardData = {
+        services: currentConfig.services.map((service) => ({
+          id: service.id,
+          name: service.name,
+          price: service.price,
+          duration: service.duration,
+          description: service.description,
+        })),
+      }
+
+      // Remove any bullet list formatting of services from the response
+      // Look for patterns like "• **ServiceName**: $price (duration) — description"
+      const serviceBulletPattern = /^[•\-*]\s+\*\*[^*]+\*\*[^\n]+$/gm
+      responseContent = responseContent.replace(serviceBulletPattern, '').trim()
+
+      // Remove multiple consecutive newlines
+      responseContent = responseContent.replace(/\n{3,}/g, '\n\n').trim()
+
+      // Append the service card marker
+      responseContent += `\n\n[SERVICE_CARD]${JSON.stringify(serviceCardData)}[/SERVICE_CARD]`
+    }
+
     const jsonMatch = responseContent.match(/\{.*\}/s)
-    if (jsonMatch) {
+    if (jsonMatch && !responseContent.includes('[SERVICE_CARD]')) {
       try {
         const extractedData = JSON.parse(jsonMatch[0])
         responseContent = responseContent.replace(/\{.*\}/s, '').trim()
@@ -301,7 +338,7 @@ export async function POST(request: NextRequest) {
         if (extractedData.date) {
           isoDate = new Date(extractedData.date).toISOString().split('T')[0]
         }
-      } catch (e) {
+      } catch {
         // Ignore if JSON is malformed
       }
     }

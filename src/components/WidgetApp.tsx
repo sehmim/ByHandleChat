@@ -637,7 +637,7 @@ export const WidgetApp = ({
               )}
               {!bookingActive && !inquiryActive && (
                 <ChatTranscript
-                  onStartBooking={() => startBookingFlow()}
+                  onStartBooking={(serviceId) => startBookingFlow(serviceId)}
                   onStartInquiry={startInquiryFlow}
                   phoneNumber={phoneNumber}
                 />

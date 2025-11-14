@@ -8,7 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import type { AnalyticsEvent, BookingSummary, Message } from '../types'
+import type { AnalyticsEvent, BookingSummary, Message, ServiceCard } from '../types'
 
 type MessageContextValue = {
   messages: Message[]
@@ -151,6 +151,20 @@ export const MessageProvider = ({
         let autoStartBooking = false
         let showInquiryButton = false
 
+        let serviceCard: ServiceCard | undefined
+
+        // Extract service card block
+        const cardRegex = /\[SERVICE_CARD\]([\s\S]*?)\[\/SERVICE_CARD\]/
+        const cardMatch = messageContent.match(cardRegex)
+        if (cardMatch) {
+          try {
+            serviceCard = JSON.parse(cardMatch[1])
+          } catch {
+            // Ignore malformed JSON
+          }
+          messageContent = messageContent.replace(cardRegex, '').trim()
+        }
+
         // Check for inquiry flow trigger (highest priority - for human handoff and security)
         if (messageContent.includes('[AUTO_START_INQUIRY]')) {
           // Remove the marker from the displayed content
@@ -177,6 +191,7 @@ export const MessageProvider = ({
           showBookingButton,
           autoStartBooking,
           showInquiryButton,
+          serviceCard,
         }
         setMessages((prev) => [...prev, botMessage])
       } catch (err) {

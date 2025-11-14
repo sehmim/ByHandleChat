@@ -33,6 +33,18 @@ export type Message = {
   autoStartBooking?: boolean
   showInquiryButton?: boolean
   summary?: BookingSummary
+  serviceCard?: ServiceCard
+}
+
+export type ServiceCard = {
+  title?: string
+  services: {
+    id?: string
+    name: string
+    price: string
+    duration: string
+    description: string
+  }[]
 }
 
 export type AnalyticsEvent =
