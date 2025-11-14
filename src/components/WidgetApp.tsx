@@ -29,8 +29,8 @@ import type {
 } from './widget/types'
 
 type WidgetAppProps = {
-  userId: string
-  calendarSettingId: string
+  userId?: string
+  calendarSettingId?: string
   chatbotId: string
   clientId?: string
   brandName?: string
@@ -93,8 +93,8 @@ type WidgetAppProps = {
 }
 
 export const WidgetApp = ({
-  userId,
-  calendarSettingId,
+  userId = 'guest',
+  calendarSettingId = '1',
   chatbotId,
   clientId,
   brandName = 'Handle Salon & Spa',

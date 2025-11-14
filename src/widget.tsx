@@ -276,7 +276,6 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
 
   // Generate default userId and calendarSettingId if not provided
   const userId = options.userId || 'guest'
-  const calendarSettingId = options.calendarSettingId || '1'
 
   const instanceKey = makeInstanceKey(userId, chatbotId)
 
