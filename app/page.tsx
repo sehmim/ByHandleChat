@@ -482,7 +482,7 @@ function HomeContent() {
 
                   <div className="inline-flex gap-4 mt-6">
                     <a
-                      href="/config"
+                      href={`/config?chatbot-id=${encodeURIComponent(chatbotIdFromUrl || '')}`}
                       className="px-6 py-3 text-black"
                     >
                       Configure Widget →
