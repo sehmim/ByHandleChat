@@ -15,8 +15,8 @@ import type { AssistantConfig, BusinessContext as BusinessContextConfig } from '
 type ChatbotPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 
 type InitOptions = {
-  userId: string
-  calendarSettingId: string
+  userId?: string
+  calendarSettingId?: string
   chatbotId: string
   clientId?: string
 }
@@ -267,23 +267,18 @@ const ensureDomReady = (callback: () => void) => {
 }
 
 export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | null> | null => {
-  const { userId, calendarSettingId, chatbotId } = options
-  const instanceKey = makeInstanceKey(userId, chatbotId)
-
-  if (!userId) {
-    console.warn('[HandleChat] Missing userId. Skipping initialization.')
-    return null
-  }
-
-  if (!calendarSettingId) {
-    console.warn('[HandleChat] Missing calendarSettingId. Skipping initialization.')
-    return null
-  }
+  const { chatbotId } = options
 
   if (!chatbotId) {
     console.warn('[HandleChat] Missing chatbotId. Skipping initialization.')
     return null
   }
+
+  // Generate default userId and calendarSettingId if not provided
+  const userId = options.userId || 'guest'
+  const calendarSettingId = options.calendarSettingId || '1'
+
+  const instanceKey = makeInstanceKey(userId, chatbotId)
 
   const activeKeyForUser = latestInstanceKeyByUser.get(userId)
   if (activeKeyForUser && activeKeyForUser !== instanceKey) {
@@ -355,21 +350,16 @@ const autoBootstrap = () => {
   const script = findHostScript()
   if (!script) return
 
-  const userId = script.dataset.userId
-  const calendarSettingId = script.dataset.calendarSettingId
   const chatbotId = script.dataset.chatbotId
 
-  if (!userId || !calendarSettingId || !chatbotId) {
-    console.warn('[HandleChat] data-user-id, data-calendar-setting-id, and data-chatbot-id are required on the embed script.')
+  if (!chatbotId) {
+    console.warn('[HandleChat] data-chatbot-id is required on the embed script.')
     return
   }
 
   ensureDomReady(() => {
     void initHandleChat({
-      userId,
-      calendarSettingId,
       chatbotId,
-      clientId: script.dataset.clientId,
     })
   })
 }

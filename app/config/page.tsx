@@ -160,6 +160,9 @@ export default function ConfigPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
+  const [verifyWebsite, setVerifyWebsite] = useState('')
+  const [isVerifying, setIsVerifying] = useState(false)
+  const [verificationResult, setVerificationResult] = useState<{ success: boolean; message: string } | null>(null)
 
   // Load config on mount
   useEffect(() => {
@@ -337,6 +340,48 @@ export default function ConfigPage() {
     setConfig({ ...config, services: newServices })
   }
 
+  const handleVerifyScript = async () => {
+    if (!verifyWebsite.trim()) return
+
+    setIsVerifying(true)
+    setVerificationResult(null)
+
+    try {
+      const scriptTag = `<script async src="${window.location.origin}/widget.js" data-chatbot-id="${chatbotId}"></script>`
+
+      const response = await fetch('/api/verify-script', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          website: verifyWebsite.trim(),
+          scriptTag,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.found) {
+        setVerificationResult({
+          success: true,
+          message: 'Widget script found! Your chatbot is live on this website.',
+        })
+      } else {
+        setVerificationResult({
+          success: false,
+          message: data.error || 'Widget script not found. Please check your installation.',
+        })
+      }
+    } catch (error) {
+      console.error('Verification error:', error)
+      setVerificationResult({
+        success: false,
+        message: 'An error occurred during verification. Please try again.',
+      })
+    } finally {
+      setIsVerifying(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -445,6 +490,92 @@ export default function ConfigPage() {
       {/* Main Content */}
       <div className="max-w-6xl mx-auto px-6 py-8">
         <div className="space-y-4">
+          {/* Script Verification */}
+          <Section title="Verify Installation" description="Check if the widget script is live on your website" defaultOpen={false}>
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex gap-3">
+                  <svg className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900">Your Widget Script</p>
+                    <div className="mt-2 bg-white border border-blue-200 rounded-lg p-3">
+                      <code className="text-xs text-gray-800 break-all">
+                        {`<script async src="${typeof window !== 'undefined' ? window.location.origin : ''}/widget.js" data-chatbot-id="${chatbotId}"></script>`}
+                      </code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Website URL
+                  <span className="block text-xs font-normal text-gray-500 mt-0.5">
+                    Enter the URL where you installed the widget script
+                  </span>
+                </label>
+                <input
+                  type="url"
+                  value={verifyWebsite}
+                  onChange={(e) => setVerifyWebsite(e.target.value)}
+                  placeholder="https://www.yoursite.com"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <button
+                type="button"
+                onClick={handleVerifyScript}
+                disabled={!verifyWebsite.trim() || isVerifying}
+                className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold rounded-lg transition ${
+                  !verifyWebsite.trim() || isVerifying
+                    ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                    : 'bg-blue-600 text-white hover:bg-blue-700'
+                }`}
+              >
+                {isVerifying ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Verifying...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Verify Installation
+                  </>
+                )}
+              </button>
+
+              {verificationResult && (
+                <div
+                  className={`rounded-lg p-4 ${
+                    verificationResult.success
+                      ? 'bg-green-50 border border-green-200'
+                      : 'bg-red-50 border border-red-200'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    {verificationResult.success ? (
+                      <svg className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                    <p className={`text-sm font-medium ${verificationResult.success ? 'text-green-800' : 'text-red-800'}`}>
+                      {verificationResult.message}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </Section>
           {/* Assistant Settings */}
           <Section title="AI Assistant" description="Configure your assistant's identity and personality">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -491,6 +622,213 @@ export default function ConfigPage() {
             </div>
           </Section>
 
+          {/* Services */}
+          <Section title="Services" description="Manage your service offerings" defaultOpen={false}>
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <button
+                  onClick={addService}
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  Add Service
+                </button>
+              </div>
+              {config.services.map((service, index) => (
+                <div key={service.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                  <div className="flex items-start justify-between mb-4">
+                    <h4 className="text-sm font-semibold text-gray-900">Service {index + 1}</h4>
+                    <button
+                      onClick={() => removeService(index)}
+                      className="text-sm text-red-600 hover:text-red-700 font-medium"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Service Name</label>
+                      <input
+                        type="text"
+                        value={service.name}
+                        onChange={(e) => updateService(index, 'name', e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Price (Display)</label>
+                      <input
+                        type="text"
+                        value={service.price}
+                        onChange={(e) => updateService(index, 'price', e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 mb-1">Duration (Display)</label>
+                      <input
+                        type="text"
+                        value={service.duration}
+                        onChange={(e) => updateService(index, 'duration', e.target.value)}
+                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      />
+                    </div>
+                  </div>
+                  <div className="mt-4">
+                    <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                    <textarea
+                      value={service.description}
+                      onChange={(e) => updateService(index, 'description', e.target.value)}
+                      rows={2}
+                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+
+          {/* Business Information */}
+          <Section title="Business Information" description="Your business details and contact info" defaultOpen={false}>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
+                  <input
+                    type="text"
+                    value={config.name}
+                    onChange={(e) => setConfig({ ...config, name: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
+                  <input
+                    type="text"
+                    value={config.businessType}
+                    onChange={(e) => setConfig({ ...config, businessType: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                <textarea
+                  value={config.description}
+                  onChange={(e) => setConfig({ ...config, description: e.target.value })}
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
+                  <input
+                    type="text"
+                    value={config.location}
+                    onChange={(e) => setConfig({ ...config, location: e.target.value })}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <div className="mt-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-700">Operating Hours</p>
+                    <p className="text-xs text-gray-500">Toggle open days and provide a start/stop time for each.</p>
+                  </div>
+                </div>
+                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {orderedSchedule.map((entry) => (
+                    <div key={entry.day} className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm font-semibold text-gray-900">{entry.day}</span>
+                        <label className="flex items-center gap-2 text-xs text-gray-600">
+                          <input
+                            type="checkbox"
+                            checked={!entry.closed}
+                            onChange={(event) => toggleDayOpen(entry.day, event.target.checked)}
+                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                          />
+                          <span>{entry.closed ? 'Closed' : 'Open'}</span>
+                        </label>
+                      </div>
+                      {!entry.closed ? (
+                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                          <label className="flex flex-col gap-1 text-gray-500">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide">Opens at</span>
+                            <input
+                              type="time"
+                              value={entry.open ?? '09:00'}
+                              onChange={(event) => updateDayTime(entry.day, 'open', event.target.value)}
+                              className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            />
+                          </label>
+                          <label className="flex flex-col gap-1 text-gray-500">
+                            <span className="text-[11px] font-semibold uppercase tracking-wide">Closes at</span>
+                            <input
+                              type="time"
+                              value={entry.close ?? '17:00'}
+                              onChange={(event) => updateDayTime(entry.day, 'close', event.target.value)}
+                              className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                            />
+                          </label>
+                        </div>
+                      ) : (
+                        <p className="mt-2 text-xs text-gray-500">Marked closed</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-sm text-gray-500">
+                  Summary:
+                  <span className="font-medium whitespace-pre-line block">{config.hours}</span>
+                </p>
+              </div>
+            </div>
+          </Section>
+
+          {/* Policies */}
+          <Section title="Policies" description="Cancellation, lateness, and payment policies" defaultOpen={false}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Policy</label>
+                <input
+                  type="text"
+                  value={config.policies.cancellation}
+                  onChange={(e) =>
+                    setConfig({ ...config, policies: { ...config.policies, cancellation: e.target.value } })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Lateness Policy</label>
+                <input
+                  type="text"
+                  value={config.policies.lateness}
+                  onChange={(e) =>
+                    setConfig({ ...config, policies: { ...config.policies, lateness: e.target.value } })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Policy</label>
+                <input
+                  type="text"
+                  value={config.policies.payment}
+                  onChange={(e) =>
+                    setConfig({ ...config, policies: { ...config.policies, payment: e.target.value } })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+            </div>
+          </Section>
+          
           {/* Text Content */}
           <Section title="Widget Text" description="Customize all messages and labels">
             <div className="space-y-4">
@@ -786,213 +1124,6 @@ export default function ConfigPage() {
                   placeholder="700"
                 />
               </div>
-            </div>
-          </Section>
-
-          {/* Business Information */}
-          <Section title="Business Information" description="Your business details and contact info" defaultOpen={false}>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Name</label>
-                  <input
-                    type="text"
-                    value={config.name}
-                    onChange={(e) => setConfig({ ...config, name: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Business Type</label>
-                  <input
-                    type="text"
-                    value={config.businessType}
-                    onChange={(e) => setConfig({ ...config, businessType: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                <textarea
-                  value={config.description}
-                  onChange={(e) => setConfig({ ...config, description: e.target.value })}
-                  rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Location</label>
-                  <input
-                    type="text"
-                    value={config.location}
-                    onChange={(e) => setConfig({ ...config, location: e.target.value })}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-              <div className="mt-4">
-                <div className="flex items-start justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">Operating Hours</p>
-                    <p className="text-xs text-gray-500">Toggle open days and provide a start/stop time for each.</p>
-                  </div>
-                </div>
-                <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {orderedSchedule.map((entry) => (
-                    <div key={entry.day} className="rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-semibold text-gray-900">{entry.day}</span>
-                        <label className="flex items-center gap-2 text-xs text-gray-600">
-                          <input
-                            type="checkbox"
-                            checked={!entry.closed}
-                            onChange={(event) => toggleDayOpen(entry.day, event.target.checked)}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                          />
-                          <span>{entry.closed ? 'Closed' : 'Open'}</span>
-                        </label>
-                      </div>
-                      {!entry.closed ? (
-                        <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
-                          <label className="flex flex-col gap-1 text-gray-500">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide">Opens at</span>
-                            <input
-                              type="time"
-                              value={entry.open ?? '09:00'}
-                              onChange={(event) => updateDayTime(entry.day, 'open', event.target.value)}
-                              className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            />
-                          </label>
-                          <label className="flex flex-col gap-1 text-gray-500">
-                            <span className="text-[11px] font-semibold uppercase tracking-wide">Closes at</span>
-                            <input
-                              type="time"
-                              value={entry.close ?? '17:00'}
-                              onChange={(event) => updateDayTime(entry.day, 'close', event.target.value)}
-                              className="rounded-lg border border-gray-300 px-2 py-1 text-sm text-gray-900 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                            />
-                          </label>
-                        </div>
-                      ) : (
-                        <p className="mt-2 text-xs text-gray-500">Marked closed</p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <p className="mt-3 text-sm text-gray-500">
-                  Summary:
-                  <span className="font-medium whitespace-pre-line block">{config.hours}</span>
-                </p>
-              </div>
-            </div>
-          </Section>
-
-          {/* Policies */}
-          <Section title="Policies" description="Cancellation, lateness, and payment policies" defaultOpen={false}>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Cancellation Policy</label>
-                <input
-                  type="text"
-                  value={config.policies.cancellation}
-                  onChange={(e) =>
-                    setConfig({ ...config, policies: { ...config.policies, cancellation: e.target.value } })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Lateness Policy</label>
-                <input
-                  type="text"
-                  value={config.policies.lateness}
-                  onChange={(e) =>
-                    setConfig({ ...config, policies: { ...config.policies, lateness: e.target.value } })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Payment Policy</label>
-                <input
-                  type="text"
-                  value={config.policies.payment}
-                  onChange={(e) =>
-                    setConfig({ ...config, policies: { ...config.policies, payment: e.target.value } })
-                  }
-                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                />
-              </div>
-            </div>
-          </Section>
-
-          {/* Services */}
-          <Section title="Services" description="Manage your service offerings" defaultOpen={false}>
-            <div className="space-y-4">
-              <div className="flex justify-end">
-                <button
-                  onClick={addService}
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                >
-                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                  </svg>
-                  Add Service
-                </button>
-              </div>
-              {config.services.map((service, index) => (
-                <div key={service.id} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                  <div className="flex items-start justify-between mb-4">
-                    <h4 className="text-sm font-semibold text-gray-900">Service {index + 1}</h4>
-                    <button
-                      onClick={() => removeService(index)}
-                      className="text-sm text-red-600 hover:text-red-700 font-medium"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Service Name</label>
-                      <input
-                        type="text"
-                        value={service.name}
-                        onChange={(e) => updateService(index, 'name', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Price (Display)</label>
-                      <input
-                        type="text"
-                        value={service.price}
-                        onChange={(e) => updateService(index, 'price', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-gray-600 mb-1">Duration (Display)</label>
-                      <input
-                        type="text"
-                        value={service.duration}
-                        onChange={(e) => updateService(index, 'duration', e.target.value)}
-                        className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      />
-                    </div>
-                  </div>
-                  <div className="mt-4">
-                    <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                    <textarea
-                      value={service.description}
-                      onChange={(e) => updateService(index, 'description', e.target.value)}
-                      rows={2}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-              ))}
             </div>
           </Section>
         </div>
