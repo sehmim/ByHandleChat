@@ -102,26 +102,6 @@ export const BookingAvailability = ({
         </button>
       </header>
 
-      <div className="flex flex-col gap-3 rounded-lg border border-slate-200/40 bg-white p-3 text-sm">
-        <div className="flex items-center justify-between gap-2 text-slate-900">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Selected service</p>
-            <p className="mt-1 font-semibold">{state.service.name}</p>
-          </div>
-          <div className="text-right">
-            <p className="font-semibold">{formattedPrice}</p>
-            <p className="text-xs text-slate-500">{state.service.durationMinutes} min</p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={onChangeService}
-          className="self-start text-xs font-semibold text-slate-600 underline-offset-4 hover:text-slate-900"
-        >
-          Change service
-        </button>
-      </div>
-
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-500">Dates</p>
         <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
