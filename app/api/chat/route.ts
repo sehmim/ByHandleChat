@@ -293,7 +293,7 @@ export async function POST(request: NextRequest) {
 
     // Check if AI is listing services and inject SERVICE_CARD if not already present
     const hasServiceCardMarker = responseContent.includes('[SERVICE_CARD]')
-    const isListingServices = /(?:here are|these are|services offered|check out these|take a look at)/i.test(responseContent)
+    const isListingServices = /(?:here are|here's|these are|services offered|check out these|take a look at|we offer|available services|I can show you|let me show you|options include|you can choose|services include|showing you|pulled|relevant)/i.test(responseContent)
 
     if (!hasServiceCardMarker && isListingServices) {
       // Inject the SERVICE_CARD marker

@@ -349,6 +349,30 @@ export const WidgetApp = ({
   const handleBookingFormSubmit = useCallback((form: BookingForm) => {
     setBookingState((prev) => {
       if (prev.status !== 'details') return prev
+
+      // Skip payment for free services (price = $0)
+      if (prev.service.priceCents === 0) {
+        const payload = {
+          service: prev.service,
+          selection: prev.selection,
+          form,
+          payment: {
+            method: 'card' as const,
+            brand: 'N/A',
+            last4: '0000',
+            amountCents: 0,
+            status: 'confirmed' as const,
+          },
+        }
+        bookingSubmissionRef.current += 1
+        const submissionId = bookingSubmissionRef.current
+        mockSubmitBooking().then(() => {
+          if (bookingSubmissionRef.current !== submissionId) return
+          setBookingState({ status: 'success', ...payload })
+        })
+        return { status: 'submitting', ...payload }
+      }
+
       return {
         status: 'payment',
         service: prev.service,

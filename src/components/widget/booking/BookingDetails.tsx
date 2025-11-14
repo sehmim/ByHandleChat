@@ -36,6 +36,7 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
 
   const formattedDate = formatDateLong(state.selection.date)
   const priceLabel = formatCurrency(state.service.priceCents)
+  const isFreeService = state.service.priceCents === 0
 
   return (
     <section className="flex flex-col gap-4 rounded-lg border border-slate-200/40 bg-white p-4">
@@ -75,7 +76,11 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
           {state.service.name} · {state.service.durationMinutes} min
         </p>
         <p className="mt-1 text-sm font-semibold text-slate-900">{priceLabel}</p>
-        <p className="mt-1 text-xs text-slate-500">We will send the receipt to your email after payment.</p>
+        <p className="mt-1 text-xs text-slate-500">
+          {isFreeService
+            ? 'We will send a confirmation to your email.'
+            : 'We will send the receipt to your email after payment.'}
+        </p>
         <button
           type="button"
           onClick={onBack}
@@ -124,7 +129,7 @@ export const BookingDetails = ({ state, onBack, onClose, onSubmit }: BookingDeta
           disabled={!isValid}
           className="flex items-center justify-center rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition disabled:opacity-60"
         >
-          Continue to payment
+          {isFreeService ? 'Confirm booking' : 'Continue to payment'}
         </button>
       </form>
     </section>
