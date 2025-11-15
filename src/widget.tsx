@@ -13,7 +13,6 @@ import {
 import type { AssistantConfig, BusinessContext as BusinessContextConfig } from './types/widget-config'
 
 const WIDGET_STYLE_ID = 'byhandle-chat-widget-styles'
-const CONFIGURED_WIDGET_API_URL = 'https://handle-chat.vercel.app'
 
 const ensureWidgetStyles = () => {
   if (typeof document === 'undefined') return
@@ -29,17 +28,17 @@ type ChatbotPosition = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 type InitOptions = {
   userId?: string
   calendarSettingId?: string
-  chatbotId: string
+  publicId: string // NEW: Using public_id instead of chatbotId for security
   clientId?: string
 }
 
 type WidgetInstance = {
   userId: string
-  chatbotId: string
+  publicId: string
   destroy: () => void
 }
 
-const makeInstanceKey = (userId: string, chatbotId: string) => `${userId}::${chatbotId}`
+const makeInstanceKey = (userId: string, publicId: string) => `${userId}::${publicId}`
 
 type WidgetUiConfig = {
   title: string
@@ -107,32 +106,53 @@ const emitEvent = (event: AnalyticsEvent) => {
 const normalizeBaseUrl = (url: string): string => url.replace(/\/$/, '')
 
 const getWidgetBaseUrl = (): string => {
-  if (CONFIGURED_WIDGET_API_URL) {
-    return normalizeBaseUrl(CONFIGURED_WIDGET_API_URL)
-  }
-
   // Try to get the base URL from the script tag
+  // This automatically works for both local development and production
   const script = document.querySelector<HTMLScriptElement>('script[src*="widget.js"]')
   if (script?.src) {
     const url = new URL(script.src)
     return normalizeBaseUrl(`${url.protocol}//${url.host}`)
   }
 
-  // Fallback to current origin (for development)
+  // Fallback to current origin (for development when script tag not found)
   return typeof window !== 'undefined' ? normalizeBaseUrl(window.location.origin) : ''
 }
 
-const fetchWidgetConfig = async (userId: string, chatbotId: string): Promise<WidgetUiConfig> => {
+const fetchWidgetConfig = async (userId: string, publicId: string): Promise<WidgetUiConfig> => {
   try {
     const baseUrl = getWidgetBaseUrl()
-    const response = await fetch(
-      `${baseUrl}/api/chatbot-configs?chatbotId=${encodeURIComponent(chatbotId)}&strict=true`,
-    )
+    // NEW: Using secure widget endpoint with public_id
+    const response = await fetch(`${baseUrl}/api/widget/${encodeURIComponent(publicId)}`)
+
     if (!response.ok) {
       throw new Error('Failed to fetch widget config')
     }
 
     const data = await response.json()
+
+    // Build business context from new structure
+    const businessContext: BusinessContextConfig = {
+      name: data.businessName,
+      businessType: data.businessType,
+      description: data.description,
+      services: data.services.map((s: any) => ({
+        id: s.id,
+        name: s.name,
+        price: s.price,
+        priceCents: s.priceCents,
+        duration: s.duration,
+        durationMinutes: s.durationMinutes,
+        description: s.description,
+      })),
+      hours: data.hours.map((h: any) =>
+        h.closed ? `${h.day}: Closed` : `${h.day}: ${h.open} – ${h.close}`
+      ).join('\n'),
+      hoursSchedule: data.hours,
+      location: data.location || '',
+      policies: data.policies,
+      serviceFocusPrompt: 'Are you looking for something specific?',
+    }
+
     const ui = data.uiConfig
     const assistant: AssistantConfig = {
       name: data.assistant?.name ?? ASSISTANT_NAME,
@@ -140,29 +160,52 @@ const fetchWidgetConfig = async (userId: string, chatbotId: string): Promise<Wid
       tagline: data.assistant?.tagline ?? ASSISTANT_TAGLINE,
       avatar: data.assistant?.avatar ?? DEFAULT_ASSISTANT_AVATAR,
     }
-    const businessContext = data.businessContext ?? BUSINESS_CONTEXT
 
     return {
-      title: ui.title,
-      welcomeMessage: ui.welcomeMessage,
-      primaryColor: ui.primaryColor,
-      logoUrl: ui.logoUrl,
-      panelWidth: ui.panelWidth,
-      panelHeight: ui.panelHeight,
-      position: ui.position || (userId === 'left' ? 'bottom-left' : 'bottom-right'),
-      zIndex: ui.zIndex,
-      launcherMessage: ui.launcherMessage,
-      expandedWidth: ui.expandedWidth,
-      expandedHeight: ui.expandedHeight,
-      mobileBreakpoint: ui.mobileBreakpoint,
-      tooltipDelay: ui.tooltipDelay,
-      composerPlaceholder: ui.composerPlaceholder,
-      composerPlaceholderLoading: ui.composerPlaceholderLoading,
-      ctaLabels: ui.ctaLabels,
-      successMessages: ui.successMessages,
-      headers: ui.headers,
-      colors: ui.colors,
-      typography: ui.typography,
+      title: ui?.title || `${assistant.name} — your ${assistant.role}`,
+      welcomeMessage: ui?.welcomeMessage || `Hi! I'm ${assistant.name}, your ${assistant.role}. What can I help you with today?`,
+      primaryColor: ui?.primaryColor || '#0f172a',
+      logoUrl: ui?.logoUrl || assistant.avatar,
+      panelWidth: ui?.panelWidth || 400,
+      panelHeight: ui?.panelHeight || 460,
+      position: ui?.position || (userId === 'left' ? 'bottom-left' : 'bottom-right'),
+      zIndex: ui?.zIndex || 2147483600,
+      launcherMessage: ui?.launcherMessage || `Looking for the right service? I'm ${assistant.name} — happy to guide you.`,
+      expandedWidth: ui?.expandedWidth || 'min(40vw, 640px)',
+      expandedHeight: ui?.expandedHeight || '70vh',
+      mobileBreakpoint: ui?.mobileBreakpoint || 640,
+      tooltipDelay: ui?.tooltipDelay || 5000,
+      composerPlaceholder: ui?.composerPlaceholder || 'Write a message…',
+      composerPlaceholderLoading: ui?.composerPlaceholderLoading || 'Waiting for response...',
+      ctaLabels: ui?.ctaLabels || { booking: 'Book appointment', inquiry: 'Leave a message' },
+      successMessages: ui?.successMessages || {
+        bookingHeader: 'All set!',
+        bookingMessage: "Payment confirmed. We'll send reminders as your appointment approaches."
+      },
+      headers: ui?.headers || { bookAppointment: 'Book an appointment', leaveMessage: 'Leave a message' },
+      colors: ui?.colors || {
+        backgroundColor: '#FFFFFF',
+        textColor: '#0f172a',
+        primaryColor: '#0f172a',
+        accentColor: '#3b82f6',
+        borderColor: '#e2e8f0',
+        buttonColor: '#0f172a',
+        buttonHoverColor: '#1e293b',
+        errorColor: '#ef4444',
+        successColor: '#22c55e',
+        warningColor: '#f59e0b',
+        launcherBackgroundColor: '#0f172a',
+        headerBackgroundColor: '#FFFFFF',
+        composerBackgroundColor: '#FFFFFF',
+        panelBackgroundColor: '#f8fafc',
+      },
+      typography: ui?.typography || {
+        fontFamily: "'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        fontSize: '14px',
+        fontWeight: '400',
+        headingFontFamily: "'Lato', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+        headingFontWeight: '700',
+      },
       assistant,
       businessContext,
     }
@@ -299,17 +342,17 @@ const ensureDomReady = (callback: () => void) => {
 }
 
 export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | null> | null => {
-  const { chatbotId } = options
+  const { publicId } = options
 
-  if (!chatbotId) {
-    console.warn('[HandleChat] Missing chatbotId. Skipping initialization.')
+  if (!publicId) {
+    console.warn('[HandleChat] Missing publicId (data-widget-id). Skipping initialization.')
     return null
   }
 
   // Generate default userId and calendarSettingId if not provided
   const userId = options.userId || 'guest'
 
-  const instanceKey = makeInstanceKey(userId, chatbotId)
+  const instanceKey = makeInstanceKey(userId, publicId)
 
   const activeKeyForUser = latestInstanceKeyByUser.get(userId)
   if (activeKeyForUser && activeKeyForUser !== instanceKey) {
@@ -395,7 +438,7 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
       const { root } = renderApp(host, options, defaultConfig)
 
       // Fetch actual config and update in background
-      fetchWidgetConfig(userId, chatbotId)
+      fetchWidgetConfig(userId, publicId)
         .then((uiConfig) => {
           // Re-render with fetched config
           renderApp(host, options, uiConfig)
@@ -406,7 +449,7 @@ export const initHandleChat = (options: InitOptions): Promise<WidgetInstance | n
 
       const instance: WidgetInstance = {
         userId,
-        chatbotId,
+        publicId,
         destroy: () => {
           root.unmount()
           host.remove()
@@ -453,16 +496,17 @@ const autoBootstrap = () => {
   const script = findHostScript()
   if (!script) return
 
-  const chatbotId = script.dataset.chatbotId
+  // NEW: Using data-widget-id instead of data-chatbot-id
+  const publicId = script.dataset.widgetId
 
-  if (!chatbotId) {
-    console.warn('[HandleChat] data-chatbot-id is required on the embed script.')
+  if (!publicId) {
+    console.warn('[HandleChat] data-widget-id is required on the embed script.')
     return
   }
 
   ensureDomReady(() => {
     void initHandleChat({
-      chatbotId,
+      publicId,
     })
   })
 }
